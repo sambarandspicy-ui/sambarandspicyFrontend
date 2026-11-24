@@ -375,40 +375,89 @@ html.is-scrolling::-webkit-scrollbar-thumb,
     break-inside: auto;
   }
   html[data-receipt-print="thermal"] .receipt-print-root .receipt-paper {
-    width: 100%;
-    max-width: 48mm;
-    box-sizing: border-box;
+    width: 48mm !important;
+    max-width: 48mm !important;
+    min-width: 48mm !important;
+    box-sizing: border-box !important;
     margin: 0 auto !important;
-    padding: 1mm !important;
-    font-size: 10px;
+    padding: 0 1mm 1mm !important;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
   }
   html[data-receipt-print="thermal"] .receipt-logo {
-    width: 33mm;
+    width: 28mm !important;
+    max-width: 100% !important;
+    margin: 0 auto 2px !important;
+  }
+  html[data-receipt-print="thermal"] .receipt-store p {
+    font-size: 8.5px !important;
+    line-height: 1.15 !important;
+    margin: 1px 0 !important;
   }
   html[data-receipt-print="thermal"] .receipt-meta {
-    margin: 3px 0;
-    padding: 2px 0;
+    margin: 2px 0 !important;
+    padding: 2px 0 !important;
+    font-size: 8.5px !important;
+    line-height: 1.2 !important;
+  }
+  html[data-receipt-print="thermal"] .receipt-meta p {
+    margin: 1px 0 !important;
   }
   html[data-receipt-print="thermal"] .receipt-paper table {
-    table-layout: fixed;
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
   }
   html[data-receipt-print="thermal"] .receipt-paper th,
   html[data-receipt-print="thermal"] .receipt-paper td {
-    padding: 2px 1px;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    padding: 2px 0 !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    font-size: 8.5px !important;
+    line-height: 1.2 !important;
   }
-  html[data-receipt-print="thermal"] .receipt-paper th:first-child {
-    width: 42%;
+  html[data-receipt-print="thermal"] .receipt-paper th:first-child,
+  html[data-receipt-print="thermal"] .receipt-paper td:first-child {
+    width: 38% !important;
+    text-align: left !important;
+    padding-right: 2px !important;
   }
-  html[data-receipt-print="thermal"] .receipt-paper th:nth-child(2) {
-    width: 32%;
+  html[data-receipt-print="thermal"] .receipt-paper th:nth-child(2),
+  html[data-receipt-print="thermal"] .receipt-paper td:nth-child(2) {
+    width: 36% !important;
+    text-align: right !important;
+    padding-right: 3px !important;
+  }
+  html[data-receipt-print="thermal"] .receipt-paper th:last-child,
+  html[data-receipt-print="thermal"] .receipt-paper td:last-child {
+    width: 26% !important;
+    text-align: right !important;
   }
   html[data-receipt-print="thermal"] .receipt-totals {
-    font-size: 10px;
+    margin-top: 3px !important;
+    padding-top: 2px !important;
+    font-size: 9px !important;
+  }
+  html[data-receipt-print="thermal"] .receipt-totals p {
+    margin: 1px 0 !important;
+    padding: 1px 0 !important;
   }
   html[data-receipt-print="thermal"] .receipt-total {
-    font-size: 13px;
+    margin-top: 2px !important;
+    padding: 3px 0 !important;
+    font-size: 11px !important;
+  }
+  html[data-receipt-print="thermal"] .receipt-payment {
+    margin: 3px 0 0 !important;
+    padding: 2px 0 !important;
+    font-size: 8px !important;
+    line-height: 1.2 !important;
+  }
+  html[data-receipt-print="thermal"] .receipt-paper footer {
+    margin-top: 4px !important;
+    font-size: 8px !important;
+    line-height: 1.2 !important;
   }
   html[data-receipt-print] .receipt-print-root tr {
     break-inside: avoid;
