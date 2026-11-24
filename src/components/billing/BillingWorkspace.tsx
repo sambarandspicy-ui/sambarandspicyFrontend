@@ -143,43 +143,45 @@ export function BillingWorkspace({
     <div className="min-w-0 lg:flex lg:h-full lg:flex-col">
       <h1 className="sr-only">Counter Billing</h1>
       {notice && <Toast message={notice} onDismiss={() => setNotice("")} />}
+        
       <div className={`flex min-h-0 flex-1 flex-col gap-4 ${billVisible ? "pb-2" : "pb-24"} lg:grid lg:grid-cols-[minmax(0,65fr)_minmax(320px,35fr)] lg:pb-0`}>
         <div id="billing-menu-top" className="pos-scroll min-w-0 lg:h-full lg:overflow-y-auto lg:pr-1">
-          <div className="sticky top-14 z-20 -mx-4 border-b border-border bg-background px-4 pb-1 pt-1 sm:top-16 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-1 lg:px-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <MenuSearchBar value={search} onChange={setSearch} />
-          <div
-            {...dietaryDragScroll}
-            ref={dietaryStrip}
-            className="mouse-drag-scroll filter-scroll flex w-[55%] min-w-0 snap-x flex-nowrap gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 sm:w-auto sm:max-w-[60%]"
-            role="group"
-            aria-label="Dietary type"
-          >
-            {(
-              [
-                { id: "ALL", label: "All" },
-                { id: "VEG", label: "Veg" },
-                { id: "NON_VEG", label: "Non-Veg" },
-                { id: "EGG", label: "Egg" },
-              ] as const
-            ).map((option) => (
-              <Button
-                key={option.id}
-                variant={dietary === option.id ? "default" : "ghost"}
-                size="lg"
-                className="min-h-11 snap-start gap-1.5 px-3"
-                aria-pressed={dietary === option.id}
-                onClick={() => setDietary(option.id)}
+          <div className="sticky top-14 z-20 -mx-4 border-b border-border bg-background px-4 py-2 sm:top-16 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-1 lg:px-1">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+              <MenuSearchBar value={search} onChange={setSearch} />
+              <div
+                {...dietaryDragScroll}
+                ref={dietaryStrip}
+                className="mouse-drag-scroll filter-scroll flex w-full min-w-0 snap-x flex-nowrap gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 sm:w-auto sm:max-w-[60%]"
+                role="group"
+                aria-label="Dietary type"
               >
-                {option.id !== "ALL" && (
-                  <span aria-hidden="true">
-                    <DietaryBadge type={option.id} />
-                  </span>
-                )}
-                {option.label}
-              </Button>
-            ))}
-          </div>
+                {(
+                  [
+                    { id: "ALL", label: "All" },
+                    { id: "VEG", label: "Veg" },
+                    { id: "NON_VEG", label: "Non-Veg" },
+                    { id: "EGG", label: "Egg" },
+                  ] as const
+                ).map((option) => (
+                  <Button
+                    key={option.id}
+                    variant={dietary === option.id ? "default" : "ghost"}
+                    size="sm"
+                    className="min-h-9 flex-1 shrink-0 snap-start gap-1 px-2.5 text-xs font-semibold sm:min-h-11 sm:flex-none sm:px-3 sm:text-sm"
+                    aria-pressed={dietary === option.id}
+                    onClick={() => setDietary(option.id)}
+                  >
+                    {option.id !== "ALL" && (
+                      <span aria-hidden="true">
+                        <DietaryBadge type={option.id} />
+                      </span>
+                    )}
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
           <CategoryStrip
             categories={activeCategories}
@@ -187,7 +189,6 @@ export function BillingWorkspace({
             selected={category}
             onSelect={setCategory}
           />
-          </div>
           <MenuGrid
             categories={activeCategories}
             title={
