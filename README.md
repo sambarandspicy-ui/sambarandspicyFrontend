@@ -25,9 +25,11 @@ powershell -ExecutionPolicy Bypass -File .\launch-kiosk.ps1
 Use `-Browser Edge` with both commands to use Microsoft Edge, or `-Url https://your-pos-url/billing` with both commands for another deployment. Launch the same browser/profile each time. In kiosk mode the receipt preview remains in the app until **Print** submits to the browser's saved destination without the browser print dialog. The preview then closes; this does not confirm that printing succeeded, and the receipt can be reopened. All other browser print actions, including **Print A4 / Save PDF**, also use silent printing and the saved destination. Check the destination in setup mode again if the printer changes.
 
 The launcher uses a separate persistent browser profile under `%LOCALAPPDATA%\SambarSpicy`. The frontend's demo data and login are local to the browser profile and origin, so an existing demo session and its bills will not automatically appear in this profile. A production backend should store shared data. Kiosk mode cannot confirm that paper was printed or control the printer's cutter; check the Windows print queue if a job fails. The receipt itself adds no watermark, but printer-driver trial marks or browser headers must be resolved in printer/browser settings. Some Bluetooth printers support only mobile apps or raw ESC/POS and lack a Windows print driver; this method requires a Windows printer that can print a test page.
+
 ## Customer menu and QR code
 
 Guests can browse the read-only menu at `/menu` without a staff login. The backend endpoint `GET /api/v1/public/menu` returns only available dishes in active categories, their public prices and store contact details. The staff catalog, bills and admin APIs remain protected. Restart the updated backend and frontend together.
 
 In Admin, open **Customer menu**, check the menu link, then download and print the QR code. Use a stable address that customers' phones can reach: `localhost` will not work, a private network address requires customers to be on that network, and an expired development tunnel will stop working. The link setting is saved in this browser; changing the address requires a new QR. In localStorage demo mode, each device has separate demo data, so use the shared HTTP backend for a real customer menu.
 
+hii
