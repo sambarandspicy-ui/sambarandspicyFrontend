@@ -1,0 +1,419 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Receipt Lobster";
+  src: url("/Lobster-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: "Inter Variable", Inter, sans-serif;
+  --font-mono: "JetBrains Mono Variable", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+}
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #2563eb;
+  --primary: #2563eb;
+  --success: #16a34a;
+  --warning: #ea580c;
+  --destructive: #dc2626;
+}
+
+html.dark {
+  --background: #0b1120;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
+  --border: #334155;
+  --input: #475569;
+  --ring: #60a5fa;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter Variable", Inter, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable=""],
+[contenteditable="true"],
+[contenteditable="plaintext-only"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+button:not(:disabled) {
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+html,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+html::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+html::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  background: transparent;
+}
+html::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+html.is-scrolling,
+*.is-scrolling {
+  scrollbar-color: color-mix(in srgb, var(--primary) 35%, var(--input)) transparent;
+}
+html.is-scrolling::-webkit-scrollbar-thumb,
+*.is-scrolling::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--primary) 35%, var(--input));
+}
+.mouse-drag-scroll[data-mouse-dragging="true"] {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+.mouse-drag-scroll[data-mouse-dragging="true"] * {
+  cursor: grabbing;
+}
+
+/* Keep the native table and its controls, but present each row as a phone card. */
+@media (max-width: 767px) {
+  .responsive-record-table {
+    display: block;
+    min-width: 0 !important;
+    white-space: normal;
+  }
+  .responsive-record-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .responsive-record-table tbody,
+  .responsive-record-table tfoot {
+    display: block;
+    background: transparent;
+  }
+  .responsive-record-table tr {
+    display: block;
+    margin: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+  }
+  .responsive-record-table td,
+  .responsive-record-table tfoot th {
+    display: grid;
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+    align-items: center;
+    gap: 12px;
+    height: auto;
+    padding: 10px 12px;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .responsive-record-table td + td,
+  .responsive-record-table tfoot th + th {
+    border-top: 1px solid var(--border);
+  }
+  .responsive-record-table td::before,
+  .responsive-record-table tfoot th::before {
+    color: var(--muted-foreground);
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .responsive-record-table .record-value {
+    min-width: 0;
+  }
+}
+
+/* Receipt paper remains white in both themes and in the print copy. */
+.receipt-paper {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: auto;
+  padding: 2mm;
+  background: #fff !important;
+  color: #000 !important;
+  font-family: Arial, sans-serif;
+  /* Previous receipt font-size: 12px; */
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 8px 22px #0f172a20;
+}
+.receipt-store {
+  text-align: center;
+}
+.receipt-logo {
+  display: block;
+  width: 48mm;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 3px;
+  color: #000;
+}
+.receipt-store h2 {
+  margin: 0 0 5px;
+  font-family: "Receipt Lobster", "Brush Script MT", cursive;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.receipt-store p,
+.receipt-meta p,
+.receipt-paper footer p {
+  margin: 2px 0;
+}
+.receipt-store p:not(.receipt-reprint) {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.receipt-reprint {
+  display: inline-block;
+  border: 1px solid #111;
+  padding: 2px 5px;
+  font-weight: 700;
+}
+.receipt-meta {
+  margin: 7px 0;
+  padding: 6px 0;
+}
+.receipt-rule {
+  display: block;
+  width: 100%;
+  height: 3px;
+  color: #000;
+}
+.receipt-paper th.receipt-rule-cell {
+  padding: 0;
+}
+.receipt-paper table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.receipt-paper th {
+  padding: 4px 2px;
+  text-align: left;
+}
+.receipt-paper td {
+  padding: 4px 2px;
+  vertical-align: top;
+}
+.receipt-paper td:first-child {
+  overflow-wrap: anywhere;
+}
+.receipt-paper th:nth-child(2),
+.receipt-paper td:nth-child(2),
+.receipt-paper th:last-child,
+.receipt-paper td:last-child {
+  padding-left: 5px;
+  text-align: right;
+  white-space: nowrap;
+}
+.receipt-totals {
+  margin-top: 5px;
+  padding-top: 4px;
+  /* Previous totals font-size: 13px; */
+  font-size: 15px;
+  font-weight: 700;
+}
+.receipt-totals p {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 3px 2px;
+}
+.receipt-total {
+  margin-top: 4px !important;
+  padding: 5px 2px !important;
+  /* Previous total font-size: 19px; */
+  font-size: 21px;
+}
+.receipt-payment {
+  margin: 6px 0 0;
+  padding: 4px 0 6px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.receipt-paper footer {
+  margin-top: 7px;
+  text-align: center;
+  font-weight: 700;
+}
+.receipt-paper footer p + p {
+  margin-top: 4px;
+}
+.receipt-stars {
+  letter-spacing: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.receipt-print-root {
+  display: none;
+}
+
+@media print {
+  html[data-receipt-print],
+  html[data-receipt-print] body {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  html[data-receipt-print] body > :not(.receipt-print-root) {
+    display: none !important;
+  }
+  html[data-receipt-print] .receipt-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100%;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    visibility: visible !important;
+  }
+  html[data-receipt-print] .receipt-print-root * {
+    visibility: visible !important;
+  }
+  html[data-receipt-print] .receipt-print-root .receipt-paper {
+    position: static !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 2mm 2mm 1mm !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    break-inside: auto;
+  }
+  html[data-receipt-print="thermal"] .receipt-print-root .receipt-paper {
+    width: 100%;
+    max-width: 48mm;
+    box-sizing: border-box;
+    margin: 0 auto !important;
+    padding: 1mm !important;
+    font-size: 10px;
+  }
+  html[data-receipt-print="thermal"] .receipt-logo {
+    width: 33mm;
+  }
+  html[data-receipt-print="thermal"] .receipt-meta {
+    margin: 3px 0;
+    padding: 2px 0;
+  }
+  html[data-receipt-print="thermal"] .receipt-paper table {
+    table-layout: fixed;
+  }
+  html[data-receipt-print="thermal"] .receipt-paper th,
+  html[data-receipt-print="thermal"] .receipt-paper td {
+    padding: 2px 1px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  html[data-receipt-print="thermal"] .receipt-paper th:first-child {
+    width: 42%;
+  }
+  html[data-receipt-print="thermal"] .receipt-paper th:nth-child(2) {
+    width: 32%;
+  }
+  html[data-receipt-print="thermal"] .receipt-totals {
+    font-size: 10px;
+  }
+  html[data-receipt-print="thermal"] .receipt-total {
+    font-size: 13px;
+  }
+  html[data-receipt-print] .receipt-print-root tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  html[data-receipt-print] .receipt-print-root thead {
+    display: table-header-group;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

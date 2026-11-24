@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import { MockPosApiClient, resetDemoData } from "../src/services/mock/mockPosApiClient";
+import { computeFinancialSummary, getStockStatus } from "../src/lib/calculations";
+import { formatDecimal, formatINR, resolvePeriodRange } from "../src/lib/format";
+const data = new Map<string,string>();
+const storage = { getItem:(k:string)=>data.get(k)??null, setItem:(k:string,v:string)=>{data.set(k,String(v));}, removeItem:(k:string)=>{data.delete(k);} };
+Object.assign(globalThis,{window:{},localStorage:storage});
+async function main(){resetDemoData();const api=new MockPosApiClient();await api.login("admin","demo");
+const saved=JSON.parse(storage.getItem("sambar-spicy-demo-v1")!);delete saved.menu[0].dietary_type;const savedBillCount=saved.bills.length;storage.setItem("sambar-spicy-demo-v1",JSON.stringify(saved));assert.equal((await api.getMenuItems())[0].dietary_type,"UNSPECIFIED");assert.equal(JSON.parse(storage.getItem("sambar-spicy-demo-v1")!).bills.length,savedBillCount);await api.updateMenuItem(1,{dietary_type:"VEG"});await assert.rejects(()=>api.updateMenuItem(1,{dietary_type:"INVALID" as never}));
+assert.equal(formatDecimal(1),"1.00");assert.equal(formatDecimal(1.005),"1.01");assert.equal(formatDecimal(1234.567),"1,234.57");assert.equal(formatINR(100,{compact:true}),"₹100.00");assert.equal(formatINR(1.005),"₹1.01");
+assert.equal(getStockStatus(2,5,2),"CRITICAL");assert.equal(getStockStatus(5,5,2),"LOW");assert.deepEqual(resolvePeriodRange("WEEKLY","2026-01-01"),{from:"2025-12-29",to:"2026-01-04"});
+const inputs={sales_revenue:1000,stock_used_cost:100,waste_cost:20,stock_adjustment_loss:10,operating_expense:70,purchase_cash_outflow:500};assert.equal(computeFinancialSummary(inputs).estimated_operating_profit,800);assert.equal(computeFinancialSummary({...inputs,sales_revenue:0}).estimated_operating_margin_percent,null);
+const stock=(await api.getInventoryItems()).find(x=>x.name==="Sambar powder")!;const movements=(await api.getStockMovements()).length;await assert.rejects(()=>api.createDailyEntry({business_date:"2026-11-20",inventory_item_id:stock.id,used_qty:99,wasted_qty:0}));assert.equal((await api.getStockMovements()).length,movements);assert.equal((await api.getInventoryItems()).find(x=>x.id===stock.id)?.current_qty,stock.current_qty);
+await api.createPurchase({business_date:"2026-11-20",lines:[{inventory_item_id:stock.id,quantity:5,unit_cost:100}]});assert.equal((await api.getInventoryItems()).find(x=>x.id===stock.id)?.current_qty,7);assert.equal((await api.getNotifications()).find(x=>x.inventory_item_id===stock.id&&x.status==="OPEN"),undefined);
+const item=(await api.getMenuItems())[0];const input={checkout_key:"test-key",items:[{menu_item_id:item.id,quantity:2}],payment_method:"UPI" as const,tendered_amount:item.selling_price*2};const paid=await api.checkoutBill(input);const again=await api.checkoutBill(input);assert.equal(paid.id,again.id);await api.updateMenuItem(item.id,{name:"Changed",selling_price:999});assert.equal((await api.getBillById(paid.id)).items[0].item_name_snapshot,item.name);assert.equal((await api.getBillById(paid.id)).items[0].unit_price,item.selling_price);
+await api.updateMenuItem(item.id,{has_half_portion:true,half_selling_price:40,half_estimated_unit_cost:12});
+const lines=[{menu_item_id:item.id,portion:"FULL" as const,quantity:1},{menu_item_id:item.id,portion:"HALF" as const,quantity:2}];
+const held=await api.holdBill({items:lines});assert.equal(held.items.length,2);assert.equal(held.items.find(x=>x.portion==="HALF")?.unit_price,40);assert.equal(held.items.find(x=>x.portion==="HALF")?.estimated_unit_cost_snapshot,12);
+const halfPaid=await api.checkoutBill({bill_id:held.id,items:lines,checkout_key:"half-test-key",payment_method:"UPI",tendered_amount:1079});assert.equal(halfPaid.total_amount,1079);assert.equal(halfPaid.items.find(x=>x.portion==="HALF")?.quantity,2);
+await assert.rejects(()=>api.holdBill({items:[lines[1],lines[1]]}));
+await api.updateMenuItem(item.id,{has_half_portion:false});await assert.rejects(()=>api.holdBill({items:[lines[1]]}));
+await api.logout();await api.login("viewer","demo");await assert.rejects(()=>api.createStockAdjustment({business_date:"2026-11-20",inventory_item_id:stock.id,movement_type:"ADJUSTMENT_OUT",quantity:1,notes:"test"}),{status:403});await api.logout();await api.login("cashier","demo");await assert.rejects(()=>api.getFinancialSummary({from:null,to:null}),{status:403});console.log("Domain invariants passed");}
+main().catch(e=>{console.error(e);process.exitCode=1;});

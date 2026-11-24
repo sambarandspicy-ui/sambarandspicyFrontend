@@ -1,0 +1,1 @@
+export class ApiError extends Error { constructor(public code: string, message: string, public status: number, public fieldErrors?: Record<string, string>, public requestId: string = globalThis.crypto?.randomUUID?.() ?? `mock-${Date.now()}`) { super(message); this.name = "ApiError"; } }

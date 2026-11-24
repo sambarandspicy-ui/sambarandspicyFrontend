@@ -1,0 +1,2 @@
+const sensitive=/(password|passwd|secret|token|authorization|credential|cvv|(^|_)pan($|_))/i;
+export function redactAuditValue(value:unknown):unknown { if(Array.isArray(value))return value.map(redactAuditValue);if(value&&typeof value==="object")return Object.fromEntries(Object.entries(value as Record<string,unknown>).map(([key,item])=>[key,sensitive.test(key)?"[REDACTED]":redactAuditValue(item)]));if(typeof value==="string"&&value.startsWith("data:"))return "[IMAGE DATA OMITTED]";return value; }
