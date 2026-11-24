@@ -270,6 +270,7 @@ export function ReportsWorkspace() {
         isReprint
         role={user.role}
         onLogReprint={(id) => billing.reprint.mutateAsync(id)}
+        preview
       />
     </div>
   );

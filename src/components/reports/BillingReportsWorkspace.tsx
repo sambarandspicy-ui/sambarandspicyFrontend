@@ -79,7 +79,7 @@ export function BillingReportsWorkspace() {
         </Card>
       </>}
       <Card className="flex flex-wrap items-center justify-between gap-4 p-5"><div><h2 className="font-bold">Inventory &amp; profit and loss</h2><p className="mt-1 text-sm text-muted-foreground">These reports are coming soon.</p></div><Button variant="outline" asChild><Link href="/inventory">Inventory <ArrowLeft className="rotate-180" size={16} aria-hidden="true" /></Link></Button></Card>
-      <ReceiptDialog bill={receipt} open={!!receipt} onOpenChange={(open) => { if (!open) setReceipt(null); }} isReprint role={user.role} onLogReprint={(id) => api.logBillReprint(id)} />
+      <ReceiptDialog bill={receipt} open={!!receipt} onOpenChange={(open) => { if (!open) setReceipt(null); }} isReprint role={user.role} onLogReprint={(id) => api.logBillReprint(id)} preview />
     </div>
   );
 }

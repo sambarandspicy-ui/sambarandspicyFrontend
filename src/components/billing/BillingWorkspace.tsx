@@ -57,6 +57,7 @@ export function BillingWorkspace({
   }, [billing.capabilities.isError, billing.capabilities.data?.round_off, cart]);
   useEffect(() => {
     if (!user?.id) return;
+    if (typeof window === "undefined" || typeof requestAnimationFrame === "undefined") return;
     // Browsers can restore a previous horizontal position on reload.
     const frame = requestAnimationFrame(() => {
       if (dietaryStrip.current) dietaryStrip.current.scrollLeft = 0;
@@ -142,8 +143,8 @@ export function BillingWorkspace({
     <div className="min-w-0 lg:flex lg:h-full lg:flex-col">
       <h1 className="sr-only">Counter Billing</h1>
       {notice && <Toast message={notice} onDismiss={() => setNotice("")} />}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 pb-24 lg:grid lg:grid-cols-[minmax(0,65fr)_minmax(320px,35fr)] lg:pb-0">
-        <div className="pos-scroll min-w-0 lg:h-full lg:overflow-y-auto lg:pr-1">
+      <div className={`flex min-h-0 flex-1 flex-col gap-4 ${billVisible ? "pb-2" : "pb-24"} lg:grid lg:grid-cols-[minmax(0,65fr)_minmax(320px,35fr)] lg:pb-0`}>
+        <div id="billing-menu-top" className="pos-scroll min-w-0 lg:h-full lg:overflow-y-auto lg:pr-1">
           <div className={`sticky top-14 z-20 -mx-4 border-b border-border bg-background px-4 pb-1 pt-1 sm:top-16 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-1 lg:px-1 ${billVisible ? "max-lg:relative max-lg:top-auto" : ""}`}>
           <div className="flex min-w-0 items-center gap-2">
             <MenuSearchBar value={search} onChange={setSearch} />
@@ -213,6 +214,7 @@ export function BillingWorkspace({
             }}
           />
         </div>
+        {/* billor mobile viewng f */}
         <div
           className={`fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-border bg-card/95 px-3 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur-md lg:hidden ${billVisible ? "hidden" : ""}`}
         >
@@ -235,6 +237,15 @@ export function BillingWorkspace({
           </a>
           <a
             href="#billing-cart-panel"
+            onClick={(event) => {
+              event.preventDefault();
+              const el = document.getElementById("billing-cart-panel");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+              } else {
+                window.location.hash = "billing-cart-panel";
+              }
+            }}
             className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white"
           >
             <ReceiptText size={18} aria-hidden="true" />
@@ -245,7 +256,7 @@ export function BillingWorkspace({
             </span>
           </a>
         </div>
-        <div id="current-bill" className="min-h-0 lg:h-full">
+        <div id="current-bill" className="min-h-[calc(100dvh-5rem)] sm:min-h-[calc(100dvh-5.5rem)] lg:min-h-0 lg:h-full">
           <BillingCartPanel
             roundOffAvailable={billing.capabilities.data?.round_off === true}
             roundOffLoading={billing.capabilities.isFetching && !billing.capabilities.data}

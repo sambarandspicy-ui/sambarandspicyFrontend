@@ -1,4 +1,4 @@
-﻿// UAT: B04 A01 A02 A03
+// UAT: B04 A01 A02 A03
 /* eslint-disable @typescript-eslint/no-require-imports -- Initialize JSDOM before importing client components. */
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";

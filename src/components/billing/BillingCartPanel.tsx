@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DietaryBadge } from "@/components/shared/dietary-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
+  ArrowLeft,
   Banknote,
   Check,
   CreditCard,
@@ -56,13 +57,34 @@ export function BillingCartPanel({
   const [clearOpen, setClearOpen] = useState(false);
   return (
     <aside
-      className="flex min-h-0 scroll-mt-20 flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm lg:h-full"
+      className="flex h-full min-h-[calc(100dvh-5rem)] sm:min-h-[calc(100dvh-5.5rem)] scroll-mt-14 sm:scroll-mt-16 flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm lg:min-h-0 lg:h-full"
       id="billing-cart-panel"
       aria-label="Current bill"
     >
       <div className="flex shrink-0 flex-wrap items-start justify-between gap-2 border-b border-border p-4 [&_h2]:text-lg [&_h2]:font-bold">
         <div>
-          <h2>Current Bill</h2>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-9 -ml-2 gap-1 px-2 text-muted-foreground lg:hidden"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  const top = document.getElementById("billing-menu-top");
+                  if (top) {
+                    top.scrollIntoView({ behavior: "smooth", block: "start" });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }
+              }}
+              aria-label="Back to menu"
+            >
+              <ArrowLeft size={16} aria-hidden="true" />
+              <span className="text-xs font-semibold">Menu</span>
+            </Button>
+            <h2>Current Bill</h2>
+          </div>
           {cart.state.resumedBillId && (
             <span className="mt-2 inline-block rounded-lg bg-blue-50 px-2 py-1 text-xs text-blue-700">
               Resumed:{" "}
@@ -109,7 +131,7 @@ export function BillingCartPanel({
         </div>
       ) : (
         <>
-          <div className="space-y-2 p-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+          <div className="flex-1 min-h-0 space-y-2 p-3 overflow-y-auto">
             {cart.state.items.length === 0 ? (
               <div className="flex min-h-40 flex-col items-center justify-center gap-2 p-5 text-center text-muted-foreground [&_strong]:text-foreground">
                 <span>
@@ -246,7 +268,7 @@ export function BillingCartPanel({
               ))
             )}
           </div>
-          <div className="shrink-0 border-t border-border bg-muted/70 p-4">
+          <div className="shrink-0 border-t border-border bg-muted/70 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <div className="space-y-2 text-sm [&>div]:flex [&>div]:justify-between [&>div]:gap-2">
               <div>
                 <span>

@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +21,7 @@ export function ReceiptDialog({
   isReprint,
   role,
   onLogReprint,
+  preview = false,
 }: {
   bill: BillDetail | null;
   open: boolean;
@@ -27,6 +29,7 @@ export function ReceiptDialog({
   isReprint: boolean;
   role: UserRole;
   onLogReprint: (id: number) => Promise<void>;
+  preview?: boolean;
 }) {
   const settings = useStoreSettings(open);
   const receipt = useRef<HTMLDivElement>(null);
@@ -124,7 +127,7 @@ export function ReceiptDialog({
               // The receipt is hidden until print, so explicitly load its local font first.
               if (printDocument.fonts) await printDocument.fonts.load('30px "Receipt Lobster"');
               const logo = copy.querySelector(".receipt-logo") as HTMLImageElement | null;
-              if (logo) await logo.decode();
+              if (logo && typeof logo.decode === "function") await logo.decode();
             }),
             new Promise<void>((_, reject) => {
               styleTimeout = window.setTimeout(
@@ -190,7 +193,8 @@ export function ReceiptDialog({
       preparationVersion.current++;
       return;
     }
-    const android = /Android/i.test(navigator.userAgent);
+    if (preview) return;
+    const android = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
     if (!bill || (!android && settings.isLoading) || attempted.current) return;
     const timer = window.setTimeout(() => {
       if (!attempted.current) {
@@ -199,9 +203,57 @@ export function ReceiptDialog({
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [open, bill, settings.isLoading, print, printRawBt]);
+  }, [open, bill, settings.isLoading, print, printRawBt, preview]);
 
   if (!bill) return null;
+  const android = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+
+  if (preview) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="flex max-h-[92vh] max-w-md flex-col overflow-hidden p-0">
+          <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
+            <div>
+              <DialogTitle className="text-base font-bold">
+                Receipt Preview
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                {bill.bill_number ?? `Bill #${bill.id}`}
+              </DialogDescription>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto bg-muted/40 p-4">
+            <div ref={receipt} className="mx-auto max-w-[80mm] overflow-hidden rounded-sm bg-white shadow-md">
+              <ReceiptTemplate
+                bill={bill}
+                isReprint={isReprint}
+                footer={settings.data?.receipt_footer}
+              />
+            </div>
+          </div>
+          {error && (
+            <div className="border-t border-destructive/20 bg-destructive/10 px-4 py-2 text-xs text-destructive">
+              {error}
+            </div>
+          )}
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-card p-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            <Button
+              disabled={printing}
+              onClick={() => void (android ? printRawBt() : print())}
+              className="gap-2"
+            >
+              <Printer size={16} aria-hidden="true" />
+              {printing ? "Preparing print..." : "Print"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <>
       <div ref={receipt} hidden>
@@ -219,7 +271,7 @@ export function ReceiptDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
-            <Button disabled={printing} onClick={() => void (/Android/i.test(navigator.userAgent) ? printRawBt() : print())}>
+            <Button disabled={printing} onClick={() => void (android ? printRawBt() : print())}>
               Retry printing
             </Button>
           </div>
