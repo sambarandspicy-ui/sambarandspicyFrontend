@@ -39,11 +39,9 @@ export function ReceiptTemplate({
       </header>
       <ReceiptRule />
       <div className="receipt-meta">
+        <p>Bill No: {bill.bill_number}</p>
         <p>
-          <strong>Bill No:</strong> {bill.bill_number}
-        </p>
-        <p>
-          <strong>Date:</strong> {bill.paid_at
+          Date: {bill.paid_at
             ? new Intl.DateTimeFormat("en-IN", {
                 timeZone: "Asia/Kolkata",
                 dateStyle: "medium",
@@ -59,7 +57,7 @@ export function ReceiptTemplate({
           IST
         </p>
         <p>
-          <strong>Cashier:</strong>{" "}
+          Cashier:{" "}
           {bill.cashier_name ?? `User #${bill.paid_by ?? bill.created_by}`}
         </p>
       </div>
@@ -115,10 +113,7 @@ export function ReceiptTemplate({
         <div className="receipt-payment">
           <div>Payment: {payment.payment_method}
           {payment.payment_method === "CASH" ? (
-            <>
-              {" "}
-              | Tendered: {formatINR(payment.tendered_amount)}
-            </>
+            <> | Tendered: {formatINR(payment.tendered_amount)}</>
           ) : payment.reference_number ? (
             <> | Ref: {maskReference(payment.reference_number)}</>
           ) : null}</div>
