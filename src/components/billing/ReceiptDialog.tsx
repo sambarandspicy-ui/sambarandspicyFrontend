@@ -223,7 +223,7 @@ export function ReceiptDialog({
             </div>
           </div>
           <div className="flex-1 overflow-y-auto bg-muted/40 p-4">
-            <div ref={receipt} className="mx-auto max-w-[80mm] overflow-hidden rounded-sm bg-white shadow-md">
+            <div ref={receipt} className="mx-auto w-fit max-w-full overflow-hidden rounded-sm bg-white shadow-md">
               <ReceiptTemplate
                 bill={bill}
                 isReprint={isReprint}
