@@ -9,11 +9,18 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Sambar & Spicy",
   description: "Restaurant workspace",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Sambar & Spicy",
+  },
 };
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#2563eb",
 };
 export default function RootLayout({
   children,
@@ -23,9 +30,14 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{document.documentElement.classList.toggle("dark",localStorage.getItem("sambar-spicy-theme")==="dark")}catch(e){}`,
+            __html: `try{document.documentElement.classList.toggle("dark",localStorage.getItem("sambar-spicy-theme")==="dark")}catch(e){}
+window.__pwaPrompt=null;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__pwaPrompt=e;window.dispatchEvent(new Event("pwa-prompt-available"));});
+if("serviceWorker" in navigator){var r=function(){navigator.serviceWorker.register("/sw.js").catch(function(){});};if(document.readyState==="complete"||document.readyState==="interactive"){r();}else{window.addEventListener("load",r);}}`,
           }}
         />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body>
         <ScrollIndicators />

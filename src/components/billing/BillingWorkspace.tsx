@@ -49,7 +49,6 @@ export function BillingWorkspace({
   );
   const [isReprint, setIsReprint] = useState(false);
   const [notice, setNotice] = useState("");
-  const [billVisible, setBillVisible] = useState(false);
   useEffect(() => {
     if (cart.state.roundOff && (billing.capabilities.isError || billing.capabilities.data?.round_off === false)) {
       cart.setRoundOff(false);
@@ -63,16 +62,6 @@ export function BillingWorkspace({
       if (dietaryStrip.current) dietaryStrip.current.scrollLeft = 0;
     });
     return () => cancelAnimationFrame(frame);
-  }, [user?.id]);
-  useEffect(() => {
-    const bill = document.getElementById("billing-cart-panel");
-    if (!bill || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setBillVisible(entry.isIntersecting),
-      { threshold: 0 },
-    );
-    observer.observe(bill);
-    return () => observer.disconnect();
   }, [user?.id]);
   const activeCategories = (categories.data ?? [])
     .filter((c) => c.is_active)
@@ -143,9 +132,9 @@ export function BillingWorkspace({
     <div className="min-w-0 lg:flex lg:h-full lg:flex-col">
       <h1 className="sr-only">Counter Billing</h1>
       {notice && <Toast message={notice} onDismiss={() => setNotice("")} />}
-      <div className={`flex min-h-0 flex-1 flex-col gap-4 ${billVisible ? "pb-2" : "pb-24"} lg:grid lg:grid-cols-[minmax(0,65fr)_minmax(320px,35fr)] lg:pb-0`}>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 pb-24 lg:grid lg:grid-cols-[minmax(0,65fr)_minmax(320px,35fr)] lg:pb-0">
         <div id="billing-menu-top" className="pos-scroll min-w-0 lg:h-full lg:overflow-y-auto lg:pr-1">
-          <div className={`sticky top-14 z-20 -mx-4 border-b border-border bg-background px-4 pb-1 pt-1 sm:top-16 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-1 lg:px-1 ${billVisible ? "max-lg:relative max-lg:top-auto" : ""}`}>
+          <div className="sticky top-14 z-20 -mx-4 border-b border-border bg-background px-4 pb-1 pt-1 sm:top-16 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-1 lg:px-1">
           <div className="flex min-w-0 items-center gap-2">
             <MenuSearchBar value={search} onChange={setSearch} />
           <div
@@ -214,9 +203,9 @@ export function BillingWorkspace({
             }}
           />
         </div>
-        {/* billor mobile viewng f */}
+        {/* billor mobile viewng  */}
         <div
-          className={`fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-border bg-card/95 px-3 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur-md lg:hidden ${billVisible ? "hidden" : ""}`}
+          className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-border bg-card/95 px-3 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-md lg:hidden"
         >
           <span className="min-w-0 flex-1 text-xs text-muted-foreground">
             {cart.totals.count} {cart.totals.count === 1 ? "item" : "items"}
@@ -256,6 +245,7 @@ export function BillingWorkspace({
             </span>
           </a>
         </div>
+  {/*      current view  */}
         <div id="current-bill" className="min-h-[calc(100dvh-5rem)] sm:min-h-[calc(100dvh-5.5rem)] lg:min-h-0 lg:h-full">
           <BillingCartPanel
             roundOffAvailable={billing.capabilities.data?.round_off === true}

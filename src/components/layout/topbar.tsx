@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { UserMenu } from "@/components/layout/user-menu";
 import { links } from "@/components/layout/sidebar";
+import { InstallAppButton } from "@/components/layout/InstallAppButton";
 import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/providers/theme-provider";
 import { useNotifications, useStoreSettings } from "@/hooks/queries";
@@ -95,6 +96,7 @@ export function Topbar({
               !
             </Button>
           )}
+          <InstallAppButton />
           {user?.role !== "BILLING" && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
