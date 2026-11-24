@@ -32,4 +32,4 @@ Guests can browse the read-only menu at `/menu` without a staff login. The backe
 
 In Admin, open **Customer menu**, check the menu link, then download and print the QR code. Use a stable address that customers' phones can reach: `localhost` will not work, a private network address requires customers to be on that network, and an expired development tunnel will stop working. The link setting is saved in this browser; changing the address requires a new QR. In localStorage demo mode, each device has separate demo data, so use the shared HTTP backend for a real customer menu.
 
-hii
+hiiii
