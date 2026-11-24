@@ -1,5 +1,4 @@
 "use client";
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -17,14 +16,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/providers/theme-provider";
 import { useNotifications, useStoreSettings } from "@/hooks/queries";
 import { DailySales } from "@/components/layout/daily-sales";
-function subscribe(cb: () => void) {
-  window.addEventListener("online", cb);
-  window.addEventListener("offline", cb);
-  return () => {
-    window.removeEventListener("online", cb);
-    window.removeEventListener("offline", cb);
-  };
-}
+
 export function Topbar({
   title,
   onMenu,
@@ -35,11 +27,6 @@ export function Topbar({
   const { user } = useAuth();
   const { theme, toggle } = useTheme();
   const pathname = usePathname();
-  const online = useSyncExternalStore(
-    subscribe,
-    () => navigator.onLine,
-    () => true,
-  );
   const store = useStoreSettings();
   const { notifications, markRead } = useNotifications(
     user?.role === "ADMIN" || user?.role === "READ_ONLY",
@@ -96,17 +83,6 @@ export function Topbar({
               <StatusBadge tone="info">Read-only account</StatusBadge>
             </span>
           )}
-          <span
-            className="inline-flex items-center gap-2 px-1 text-xs text-muted-foreground lg:px-2"
-            aria-label={online ? "Online" : "Offline"}
-          >
-            <i
-              className={`size-2 rounded-full ${online ? "bg-success" : "bg-destructive"}`}
-            />
-            <span className="hidden lg:inline">
-              {online ? "Online" : "Offline"}
-            </span>
-          </span>
           {store.isError && (
             <Button
               variant="ghost"
