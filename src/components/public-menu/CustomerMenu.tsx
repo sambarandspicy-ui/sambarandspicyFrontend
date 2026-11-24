@@ -75,10 +75,16 @@ export function CustomerMenu() {
           {data && <p className="text-sm font-medium text-[#5c6e60]">{visible.length} {visible.length === 1 ? "dish" : "dishes"} available</p>}
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-          <label className="flex min-h-12 items-center gap-3 rounded-2xl focus-within:ring-2 focus-within:ring-[#b58a27] border border-[#d7decb] bg-white px-4 shadow-sm">
+          <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-[#d7decb] bg-white px-4 shadow-sm transition-shadow focus-within:border-[#b58a27] focus-within:ring-2 focus-within:ring-[#b58a27]/30">
             <Search size={19} className="shrink-0 text-[#708773]" /><span className="sr-only">Search dishes</span>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search dishes or categories..." className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#829585]" />
-            {search && <button type="button" aria-label="Clear search" onClick={()=>setSearch("")} className="grid size-8 place-items-center rounded-full text-[#5c6e60]"><X size={16}/></button>}
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search dishes or categories..."
+              className="min-w-0 flex-1 border-none bg-transparent text-sm shadow-none outline-none ring-0 placeholder:text-[#829585] focus:border-none focus:outline-none focus:ring-0 focus-visible:border-none focus-visible:outline-none focus-visible:ring-0 [border:none] [outline:none]"
+            />
+            {search && <button type="button" aria-label="Clear search" onClick={()=>setSearch("")} className="grid size-8 place-items-center rounded-full text-[#5c6e60] hover:bg-black/5"><X size={16}/></button>}
           </label>
           <div className="flex gap-1 overflow-x-auto rounded-2xl border border-[#d7decb] bg-white p-1" aria-label="Dietary filters">
             {([["ALL","All"],["VEG","Veg"],["NON_VEG","Non-veg"],["EGG","Egg"]] as const).map(([key,label])=><button key={key} type="button" aria-label={label} onClick={()=>setDiet(key)} aria-pressed={diet===key} className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold ${diet===key?"bg-[#17552f] text-white":"text-[#425c49]"}`}>{key!=="ALL"&&<DietaryBadge type={key}/>} {label}</button>)}
