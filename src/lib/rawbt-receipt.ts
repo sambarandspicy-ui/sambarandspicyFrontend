@@ -4,7 +4,13 @@ import { maskReference } from "@/components/billing/ReceiptTemplate";
 
 // Render text to a monochrome ESC/POS raster so INR and the shop font do not
 // depend on the printer's built-in character set.
-export function rawBtReceiptUrl(bill: BillDetail, footer: string | null | undefined, reprint: boolean, logoImage: HTMLImageElement): string {
+function renderReceiptCanvas(
+  bill: BillDetail,
+  footer: string | null | undefined,
+  reprint: boolean,
+  logoImage: HTMLImageElement,
+  scale = 1,
+) {
   const width = 384, margin = 12, contentWidth = width - margin * 2;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d") ?? (() => { throw new Error("Image printing is not supported on this device."); })();
@@ -116,11 +122,27 @@ export function rawBtReceiptUrl(bill: BillDetail, footer: string | null | undefi
   y += 8;
   // Large Android intents can be rejected by the OS; leave the browser-print fallback available.
   if (y > 8000) throw new Error("This receipt is too long for RawBT. Use browser printing instead.");
-  canvas.width = width;
-  canvas.height = y;
-  ctx.fillStyle = "white"; ctx.fillRect(0, 0, width, y);
+  canvas.width = width * scale;
+  canvas.height = y * scale;
+  ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (scale !== 1) ctx.scale(scale, scale);
   ctx.fillStyle = "black";
   operations.forEach((draw) => draw());
+  return { canvas, ctx, width, height: y };
+}
+
+export function rawBtReceiptPng(
+  bill: BillDetail,
+  footer: string | null | undefined,
+  reprint: boolean,
+  logoImage: HTMLImageElement,
+): string {
+  const { canvas } = renderReceiptCanvas(bill, footer, reprint, logoImage, 3);
+  return canvas.toDataURL("image/png");
+}
+
+export function rawBtReceiptUrl(bill: BillDetail, footer: string | null | undefined, reprint: boolean, logoImage: HTMLImageElement): string {
+  const { ctx, width, height: y } = renderReceiptCanvas(bill, footer, reprint, logoImage, 1);
   const rgba = ctx.getImageData(0, 0, width, y).data;
   const bytesPerRow = width / 8;
   const bytes = new Uint8Array(2 + 8 + bytesPerRow * y + 2);

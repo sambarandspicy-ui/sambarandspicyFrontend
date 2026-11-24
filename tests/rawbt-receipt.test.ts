@@ -1,14 +1,16 @@
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 import type { BillDetail } from "../src/types/domain";
-import { rawBtReceiptUrl } from "../src/lib/rawbt-receipt";
+import { rawBtReceiptPng, rawBtReceiptUrl } from "../src/lib/rawbt-receipt";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>");
 Object.defineProperty(globalThis, "document", { value: dom.window.document, configurable: true });
 const drawn: string[] = [];
 let separatorCount = 0;
+let scaleFactor = 1;
 const context = {
   font: "", fillStyle: "", textAlign: "", textBaseline: "",
+  scale: (x: number) => { scaleFactor = x; },
   measureText: (text: string) => ({ width: text.length * 8 }),
   fillRect: (_x: number, _y: number, _width: number, height: number) => { if (height === 4) separatorCount++; }, drawImage: () => {},
   save: () => {}, restore: () => {}, translate: () => {}, beginPath: () => {},
@@ -21,6 +23,7 @@ const context = {
   },
 };
 dom.window.HTMLCanvasElement.prototype.getContext = (() => context) as unknown as typeof dom.window.HTMLCanvasElement.prototype.getContext;
+dom.window.HTMLCanvasElement.prototype.toDataURL = (() => "data:image/png;base64,MOCK") as unknown as typeof dom.window.HTMLCanvasElement.prototype.toDataURL;
 const bill = {
   store_name_snapshot: "Sambar & Spicy", store_address_snapshot: "Chennai", store_phone_snapshot: "123",
   bill_number: "SNS-001", paid_at: "2026-11-22T10:00:00Z", cashier_name: "Cashier",
@@ -47,5 +50,8 @@ assert.ok(drawn.includes("Qty x Rate"));
 assert.ok(drawn.includes("Amount"));
 assert.ok(drawn.includes("Non-GST counter receipt"));
 assert.ok(!drawn.some((text) => text.includes("SECRET")));
+const png = rawBtReceiptPng(bill, "Come again", true, {} as HTMLImageElement);
+assert.equal(png, "data:image/png;base64,MOCK");
+assert.equal(scaleFactor, 3);
 dom.window.close();
 console.log("RawBT receipt commands and amounts passed");

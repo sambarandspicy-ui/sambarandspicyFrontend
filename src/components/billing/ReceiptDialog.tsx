@@ -11,8 +11,21 @@ import {
 import type { BillDetail, UserRole } from "@/types/domain";
 import { useStoreSettings } from "@/hooks/queries";
 import { ReceiptTemplate } from "./ReceiptTemplate";
-import { rawBtReceiptUrl } from "@/lib/rawbt-receipt";
+import { rawBtReceiptPng, rawBtReceiptUrl } from "@/lib/rawbt-receipt";
 let previousPrintCleanup: (() => void) | null = null;
+
+async function buildReceiptRasterPng(
+  bill: BillDetail,
+  footer: string | null | undefined,
+  isReprint: boolean,
+): Promise<string | null> {
+  if (typeof Image === "undefined") return null;
+  const logo = new Image();
+  logo.src = "/images/receipt-logo.png";
+  if (typeof logo.decode !== "function") return null;
+  await logo.decode();
+  return rawBtReceiptPng(bill, footer, isReprint, logo);
+}
 
 export function ReceiptDialog({
   bill,
@@ -39,6 +52,29 @@ export function ReceiptDialog({
   const preparationVersion = useRef(0);
   const [error, setError] = useState("");
   const [printing, setPrinting] = useState(false);
+  const [previewRaster, setPreviewRaster] = useState<{
+    key: string;
+    src: string;
+  } | null>(null);
+  const footerText = settings.data
+    ? settings.data.receipt_footer
+    : "Thank you for visiting! Come again.";
+  const previewKey = bill
+    ? `${bill.id}:${isReprint}:${footerText ?? ""}`
+    : "";
+
+  useEffect(() => {
+    if (!open || !preview || !bill || settings.isLoading) return;
+    let cancelled = false;
+    void buildReceiptRasterPng(bill, footerText, isReprint)
+      .then((src) => {
+        if (!cancelled && src) setPreviewRaster({ key: previewKey, src });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [open, preview, bill, footerText, isReprint, settings.isLoading, previewKey]);
 
   const print = useCallback(async () => {
     if (!bill || inFlight.current) return;
@@ -140,6 +176,27 @@ export function ReceiptDialog({
           if (styleTimeout !== undefined) window.clearTimeout(styleTimeout);
         }
       }
+      // Match desktop print output pixel-for-pixel to the RawBT receipt raster when canvas is available.
+      try {
+        const existingRaster = copy.querySelector(".receipt-raster") as HTMLImageElement | null;
+        if (!existingRaster) {
+          const rasterSrc =
+            previewRaster?.key === previewKey
+              ? previewRaster.src
+              : await buildReceiptRasterPng(bill, footerText, isReprint);
+          if (rasterSrc) {
+            const rasterImg = printDocument.createElement("img");
+            rasterImg.className = "receipt-raster";
+            rasterImg.src = rasterSrc;
+            rasterImg.alt = bill.bill_number ?? `Receipt #${bill.id}`;
+            if (typeof rasterImg.decode === "function") await rasterImg.decode();
+            copy.dataset.receiptMode = "raster";
+            copy.appendChild(rasterImg);
+          }
+        }
+      } catch {
+        // Keep the CSS-styled HTML receipt when canvas raster rendering is unavailable.
+      }
       if (typeof printWindow.print !== "function")
         throw new Error("Printing is not supported in this browser");
       printWindow.print();
@@ -153,7 +210,7 @@ export function ReceiptDialog({
       inFlight.current = false;
       setPrinting(false);
     }
-  }, [bill, isReprint, onLogReprint, onOpenChange, role]);
+  }, [bill, footerText, isReprint, onLogReprint, onOpenChange, previewKey, previewRaster, role]);
 
   const printRawBt = useCallback(async () => {
     if (!bill || inFlight.current) return;
@@ -169,8 +226,7 @@ export function ReceiptDialog({
         : Promise.resolve();
       await Promise.all([logo.decode(), logReprint]);
       if (version !== preparationVersion.current) return;
-      const footer = settings.data ? settings.data.receipt_footer : "Thank you for visiting! Come again.";
-      const url = rawBtReceiptUrl(bill, footer, isReprint, logo);
+      const url = rawBtReceiptUrl(bill, footerText, isReprint, logo);
       const link = document.createElement("a");
       link.href = url;
       document.body.appendChild(link);
@@ -184,7 +240,7 @@ export function ReceiptDialog({
       inFlight.current = false;
       setPrinting(false);
     }
-  }, [bill, isReprint, onLogReprint, onOpenChange, role, settings.data]);
+  }, [bill, footerText, isReprint, onLogReprint, onOpenChange, role]);
 
   useEffect(() => {
     if (!open) {
@@ -224,11 +280,26 @@ export function ReceiptDialog({
           </div>
           <div className="flex-1 overflow-y-auto bg-muted/40 p-4">
             <div ref={receipt} className="mx-auto w-fit max-w-full overflow-hidden rounded-sm bg-white shadow-md">
-              <ReceiptTemplate
-                bill={bill}
-                isReprint={isReprint}
-                footer={settings.data?.receipt_footer}
-              />
+              <div
+                className="relative"
+                data-preview-raster={
+                  previewRaster?.key === previewKey ? "true" : undefined
+                }
+              >
+                <ReceiptTemplate
+                  bill={bill}
+                  isReprint={isReprint}
+                  footer={settings.data?.receipt_footer}
+                />
+                {previewRaster?.key === previewKey && (
+                  /* eslint-disable-next-line @next/next/no-img-element -- Exact RawBT raster preview matching thermal output. */
+                  <img
+                    src={previewRaster.src}
+                    alt={bill.bill_number ?? `Receipt #${bill.id}`}
+                    className="receipt-raster-preview"
+                  />
+                )}
+              </div>
             </div>
           </div>
           {error && (

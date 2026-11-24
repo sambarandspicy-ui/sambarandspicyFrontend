@@ -124,7 +124,7 @@ export function BillingWorkspace({
     if (cart.state.resumedBillId === id) cart.clear();
     setNotice("Held bill cancelled.");
   }
-  async function checkout(input: CheckoutInput) {
+  async function checkout(input: CheckoutInput, options?: { print?: boolean }) {
     if (!canEdit) throw new Error("Access denied");
     if (input.round_off && billing.capabilities.data?.round_off !== true)
       throw new ApiError("ROUND_OFF_UNAVAILABLE", "Round off is unavailable. Refresh after updating the billing service.", 400);
@@ -132,10 +132,14 @@ export function BillingWorkspace({
     if (process.env.NODE_ENV !== "production")
       await simulatePostCheckoutFailure?.(bill);
     setLastCompletedBill(bill);
-    setReceiptBill(bill);
-    setIsReprint(false);
     cart.clear();
-    setReceiptOpen(true);
+    if (options?.print !== false) {
+      setReceiptBill(bill);
+      setIsReprint(false);
+      setReceiptOpen(true);
+    } else {
+      setNotice(`Payment saved (${bill.bill_number ?? `Bill #${bill.id}`}).`);
+    }
     return bill;
   }
   if (!user) return null;

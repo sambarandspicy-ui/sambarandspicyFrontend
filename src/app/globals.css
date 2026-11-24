@@ -354,6 +354,22 @@ html.is-scrolling::-webkit-scrollbar-thumb,
   overflow: hidden;
   white-space: nowrap;
 }
+.receipt-paper[data-receipt-mode="raster"] > :not(.receipt-raster) {
+  display: none !important;
+}
+.receipt-paper[data-receipt-mode="raster"] {
+  padding: 0 !important;
+}
+.receipt-raster,
+.receipt-raster-preview {
+  display: block;
+  width: 48mm;
+  max-width: 100%;
+  height: auto;
+}
+[data-preview-raster="true"] .receipt-paper {
+  display: none;
+}
 .receipt-print-root {
   display: none;
 }
@@ -410,6 +426,9 @@ html.is-scrolling::-webkit-scrollbar-thumb,
     font-size: 9.5px !important;
     line-height: 1.25 !important;
     font-family: Arial, sans-serif !important;
+  }
+  html[data-receipt-print="thermal"] .receipt-print-root .receipt-paper[data-receipt-mode="raster"] {
+    padding: 0 !important;
   }
   html[data-receipt-print] .receipt-print-root tr {
     break-inside: avoid;

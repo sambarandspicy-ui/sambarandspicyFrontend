@@ -12,7 +12,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { Banknote, CreditCard, WalletCards, X } from "lucide-react";
+import { Banknote, Check, CreditCard, Printer, WalletCards, X } from "lucide-react";
 import type { BillingCart } from "@/hooks/useBillingCart";
 import type { CheckoutInput } from "@/services/api/types";
 import type {
@@ -60,12 +60,16 @@ export function CheckoutDialog({
   cart: BillingCart;
   menu: MenuItem[];
   categories: Category[];
-  onCheckout: (input: CheckoutInput) => Promise<BillDetail>;
+  onCheckout: (
+    input: CheckoutInput,
+    options?: { print?: boolean },
+  ) => Promise<BillDetail>;
   pending: boolean;
 }) {
   const [error, setError] = useState("");
   const [uncertain, setUncertain] = useState(false);
-  const attempt = useRef<CheckoutInput | null>(null);
+  const [activeAction, setActiveAction] = useState<"save" | "print" | null>(null);
+  const attempt = useRef<{ input: CheckoutInput; print: boolean } | null>(null);
   const submitted = useRef(false);
   const {
     register,
@@ -105,12 +109,13 @@ export function CheckoutDialog({
     setValue("tendered", cart.totals.total);
     setValue("confirmed", false);
   }
-  async function run(input: CheckoutInput) {
+  async function run(input: CheckoutInput, printReceipt: boolean) {
     if (submitted.current) return;
     submitted.current = true;
+    setActiveAction(printReceipt ? "print" : "save");
     setError("");
     try {
-      await onCheckout(input);
+      await onCheckout(input, { print: printReceipt });
       onOpenChange(false);
     } catch (e) {
       const known = e instanceof ApiError && e.status >= 400 && e.status < 500;
@@ -123,9 +128,10 @@ export function CheckoutDialog({
       );
     } finally {
       submitted.current = false;
+      setActiveAction(null);
     }
   }
-  async function submit(values: Values) {
+  async function submit(values: Values, printReceipt = true) {
     if (stale) {
       setError(
         "A menu price or availability changed. Remove and re-add the affected item before checkout.",
@@ -164,8 +170,8 @@ export function CheckoutDialog({
         values.method === "CASH" ? null : values.reference.trim() || null,
       note: values.note.trim() || null,
     };
-    attempt.current = input;
-    await run(input);
+    attempt.current = { input, print: printReceipt };
+    await run(input, printReceipt);
   }
   const quick = [
     { label: "Exact", value: cart.totals.total },
@@ -236,7 +242,7 @@ export function CheckoutDialog({
         </div>
         <form
           className="flex min-h-0 flex-1 flex-col"
-          onSubmit={(e) => void handleSubmit(submit)(e)}
+          onSubmit={(e) => void handleSubmit((values) => submit(values, true))(e)}
         >
           <div className="pos-scroll min-h-0 flex-1 space-y-4 overflow-y-auto py-3 pr-1 sm:py-4 [&_fieldset]:space-y-3 [&_fieldset]:border-0 [&_label]:text-sm [&_label]:font-semibold">
             <div className="space-y-3 rounded-xl border border-border bg-muted p-3 sm:p-4">
@@ -402,7 +408,7 @@ export function CheckoutDialog({
               </div>
             )}
           </div>
-          <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-border pt-3 sm:flex sm:justify-end">
+          <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-border pt-3 sm:flex sm:flex-wrap sm:justify-end">
             {!uncertain && (
               <DialogClose asChild>
                 <Button
@@ -419,23 +425,44 @@ export function CheckoutDialog({
               <Button
                 variant="outline"
                 type="button"
-                className="col-span-2 min-h-11 bg-primary text-white"
+                className="col-span-2 min-h-11 bg-primary text-white sm:w-auto"
                 disabled={pending}
                 onClick={() => {
-                  if (attempt.current) void run(attempt.current);
+                  if (attempt.current) {
+                    void run(attempt.current.input, attempt.current.print);
+                  }
                 }}
               >
                 {pending ? "Processing..." : "Retry Checkout"}
               </Button>
             ) : (
-              <Button
-                variant="success"
-                type="submit"
-                className="min-h-11 min-w-0 px-2 sm:px-4"
-                disabled={pending || stale}
-              >
-                {pending ? "Processing..." : "Confirm payment"}
-              </Button>
+              <>
+                <Button
+                  variant="default"
+                  type="button"
+                  className="min-h-11 min-w-0 px-2 sm:px-4"
+                  disabled={pending || stale}
+                  onClick={() =>
+                    void handleSubmit((values) => submit(values, false))()
+                  }
+                >
+                  <Check size={17} aria-hidden="true" />
+                  {pending && activeAction === "save"
+                    ? "Saving..."
+                    : "Save payment"}
+                </Button>
+                <Button
+                  variant="success"
+                  type="submit"
+                  className="col-span-2 min-h-11 min-w-0 px-2 sm:col-span-1 sm:px-4"
+                  disabled={pending || stale}
+                >
+                  <Printer size={17} aria-hidden="true" />
+                  {pending && activeAction === "print"
+                    ? "Processing..."
+                    : "Payment & Print"}
+                </Button>
+              </>
             )}
           </div>
         </form>
