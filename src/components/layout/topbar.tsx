@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Menu, ChefHat, Moon, Sun } from "lucide-react";
+import { Bell, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { UserMenu } from "@/components/layout/user-menu";
@@ -46,8 +47,15 @@ export function Topbar({
           >
             <Menu size={21} />
           </Button>
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-white">
-            <ChefHat size={20} />
+          <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-border/60 bg-muted/30 shadow-xs">
+            <Image
+              src="/images/Sambar&SpicyRestaurantLogo.png"
+              alt="Sambar & Spicy Logo"
+              width={40}
+              height={40}
+              className="size-full object-cover"
+              priority
+            />
           </span>
           <div className="hidden min-w-0 sm:block [&_strong]:block [&_strong]:truncate [&_small]:block [&_small]:max-w-44 [&_small]:truncate [&_small]:text-xs [&_small]:font-normal [&_small]:text-muted-foreground">
             <strong>{store.data?.store_name ?? "Sambar & Spicy"}</strong>

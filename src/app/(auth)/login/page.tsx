@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ChefHat, Eye, EyeOff, LoaderCircle } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,8 +102,15 @@ export default function Login() {
       <OfflineBanner />
       <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-md flex-col justify-center">
         <div className="mb-7 flex items-center justify-center gap-3 text-lg font-bold">
-          <span className="grid size-11 place-items-center rounded-xl bg-primary text-white shadow-md">
-            <ChefHat size={22} />
+          <span className="relative grid size-12 place-items-center overflow-hidden rounded-2xl border border-border/60 bg-muted/30 shadow-md">
+            <Image
+              src="/images/Sambar&SpicyRestaurantLogo.png"
+              alt="Sambar & Spicy Logo"
+              width={48}
+              height={48}
+              className="size-full object-cover"
+              priority
+            />
           </span>
           <span>Sambar &amp; Spicy</span>
         </div>
