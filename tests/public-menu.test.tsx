@@ -4,7 +4,7 @@ import { JSDOM } from "jsdom";
 import React from "react";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost" });
-for (const name of ["window", "document", "navigator", "localStorage", "HTMLElement", "Element", "Node", "MutationObserver"] as const)
+for (const name of ["window", "document", "navigator", "localStorage", "HTMLElement", "Element", "Event", "CustomEvent", "NodeFilter", "Node", "getComputedStyle", "MutationObserver"] as const)
   Object.defineProperty(globalThis, name, { value: name === "window" ? dom.window : dom.window[name], configurable: true });
 
 async function main() {
@@ -53,6 +53,12 @@ async function main() {
   assert.equal(screen.queryByRole("button", { name: /add to cart|checkout/i }), null);
   const visibleDish = publicMenu.items.find(item => item.id !== hidden.id)!;
   await screen.findByText(visibleDish.name);
+  fireEvent.click(screen.getByRole("button", { name: new RegExp(visibleDish.name) }));
+  const detailDialog = await screen.findByRole("dialog");
+  assert.ok(detailDialog.textContent?.includes(visibleDish.name));
+  if (visibleDish.description) assert.ok(detailDialog.textContent?.includes(visibleDish.description));
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  assert.equal(screen.queryByRole("dialog"), null);
   localStorage.removeItem("sambar-spicy-public-menu-v1:mock");
   api.getPublicMenu = async () => { throw new Error("offline"); };
   await client.invalidateQueries({ queryKey: ["public-menu"] });

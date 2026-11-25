@@ -5,6 +5,12 @@ import { useState, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Maximize, Minimize, Search, UtensilsCrossed, X } from "lucide-react";
 import { DietaryBadge } from "@/components/shared/dietary-badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatINR, resolveAssetUrl } from "@/lib/format";
 import { api, dataMode } from "@/services/api";
 import { browserStorage, loadPublicMenuCached } from "@/services/public-menu-cache";
@@ -30,6 +36,7 @@ export function CustomerMenu() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<number | null>(null);
   const [diet, setDiet] = useState<"ALL" | "VEG" | "NON_VEG" | "EGG">("ALL");
+  const [selectedItem, setSelectedItem] = useState<NonNullable<typeof data>["items"][number] | null>(null);
   const fullscreen = useSyncExternalStore(subscribeFullscreen, fullscreenState, () => 0);
   const [fullscreenError, setFullscreenError] = useState(false);
   async function toggleFullscreen() {
@@ -97,21 +104,81 @@ export function CustomerMenu() {
         {isError && data && <p role="status" className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">Showing the last loaded menu. Please confirm prices and availability with our team.</p>}
         {isLoading ? <p role="status" className="py-16 text-center text-[#5c6e60]">Loading today&apos;s menu...</p> : isError && !data ? <div className="py-16 text-center"><p className="font-semibold">The menu could not be loaded.</p><button type="button" onClick={()=>void refetch()} className="mt-4 rounded-xl bg-[#17552f] px-5 py-3 text-sm font-bold text-white">Try again</button></div> : visible.length === 0 ? <div className="rounded-2xl border border-dashed border-[#cad6bf] bg-white py-16 text-center"><UtensilsCrossed className="mx-auto text-[#829585]" /><p className="mt-3 font-bold">No dishes found</p><p className="mt-1 text-sm text-[#5c6e60]">{term || category || diet !== "ALL" ? "Try another search or filter." : "Please check back a little later."}</p></div> :
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
-            {visible.map(item=><article key={item.id} className="min-w-0 overflow-hidden rounded-2xl border border-[#dce4d3] bg-white shadow-[0_4px_20px_rgba(16,59,32,0.07)]">
-              <div className="relative aspect-[4/3] overflow-hidden bg-[#edf1e6]">
-                <img loading="lazy" decoding="async" src={resolveAssetUrl(item.imagePath,"/images/dish.svg")} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/images/dish.svg";}} className="h-full w-full object-cover" />
-                {item.dietaryType!=="UNSPECIFIED"&&<span className="absolute left-2 top-2 grid size-8 place-items-center rounded-lg bg-white shadow-sm"><DietaryBadge type={item.dietaryType}/></span>}
-              </div>
-              <div className="flex min-h-32 flex-col p-3 sm:p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#98762c]">{data?.categories.find(c=>c.id===item.categoryId)?.name}</p>
-                <h3 className="mt-1 break-words text-sm font-bold leading-5 sm:text-base">{item.name}</h3>
-                {item.description&&<p className="mt-1 line-clamp-2 text-xs leading-5 text-[#5c6e60]">{item.description}</p>}
-                <div className="mt-auto pt-3"><span className="text-base font-extrabold text-[#17552f]">{formatINR(item.sellingPrice)}</span>{item.hasHalfPortion && item.halfSellingPrice != null && <p className="mt-0.5 text-xs text-[#5c6e60]">Half {formatINR(item.halfSellingPrice)}</p>}</div>
-              </div>
+            {visible.map(item=><article key={item.id} className="min-w-0 overflow-hidden rounded-2xl border border-[#dce4d3] bg-white shadow-[0_4px_20px_rgba(16,59,32,0.07)] transition-transform hover:-translate-y-0.5">
+              <button
+                type="button"
+                onClick={() => setSelectedItem(item)}
+                className="flex h-full w-full cursor-pointer flex-col text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17552f]"
+              >
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#edf1e6]">
+                  <img loading="lazy" decoding="async" src={resolveAssetUrl(item.imagePath,"/images/dish.svg")} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/images/dish.svg";}} className="h-full w-full object-cover" />
+                  {item.dietaryType!=="UNSPECIFIED"&&<span className="absolute left-2 top-2 grid size-8 place-items-center rounded-lg bg-white shadow-sm"><DietaryBadge type={item.dietaryType}/></span>}
+                </div>
+                <div className="flex min-h-32 w-full flex-1 flex-col p-3 sm:p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#98762c]">{data?.categories.find(c=>c.id===item.categoryId)?.name}</p>
+                  <h3 className="mt-1 break-words text-sm font-bold leading-5 sm:text-base">{item.name}</h3>
+                  {item.description&&<p className="mt-1 line-clamp-2 text-xs leading-5 text-[#5c6e60]">{item.description}</p>}
+                  <div className="mt-auto pt-3"><span className="text-base font-extrabold text-[#17552f]">{formatINR(item.sellingPrice)}</span>{item.hasHalfPortion && item.halfSellingPrice != null && <p className="mt-0.5 text-xs text-[#5c6e60]">Half {formatINR(item.halfSellingPrice)}</p>}</div>
+                </div>
+              </button>
             </article>)}
           </div>}
         <p className="mt-10 text-center text-xs text-[#718172]">Prices are in Indian rupees. Please confirm availability and prices with our team when ordering.</p>
       </div>
+      <Dialog open={!!selectedItem} onOpenChange={(open) => { if (!open) setSelectedItem(null); }}>
+        <DialogContent className="max-w-md overflow-hidden border-[#dce4d3] bg-[#f7f5eb] p-0 text-[#183223]" style={{ colorScheme: "light" }}>
+          {selectedItem && (
+            <>
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#edf1e6]">
+                <img
+                  src={resolveAssetUrl(selectedItem.imagePath, "/images/dish.svg")}
+                  alt={selectedItem.name}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "/images/dish.svg";
+                  }}
+                  className="h-full w-full object-cover"
+                />
+                {selectedItem.dietaryType !== "UNSPECIFIED" && (
+                  <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-xs font-bold shadow-sm">
+                    <DietaryBadge type={selectedItem.dietaryType} />
+                    <span>
+                      {selectedItem.dietaryType === "VEG"
+                        ? "Veg"
+                        : selectedItem.dietaryType === "NON_VEG"
+                          ? "Non-veg"
+                          : "Egg"}
+                    </span>
+                  </span>
+                )}
+              </div>
+              <div className="space-y-3 bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#98762c]">
+                  {data?.categories.find((c) => c.id === selectedItem.categoryId)?.name}
+                </p>
+                <DialogTitle className="font-serif text-2xl font-bold leading-tight text-[#183223]">
+                  {selectedItem.name}
+                </DialogTitle>
+                <DialogDescription className="whitespace-pre-line text-sm leading-relaxed text-[#425c49]">
+                  {selectedItem.description || "Ask our team for today's preparation details."}
+                </DialogDescription>
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-[#dce4d3] pt-3">
+                  <div>
+                    <span className="text-xl font-extrabold text-[#17552f]">
+                      {formatINR(selectedItem.sellingPrice)}
+                    </span>
+                    {selectedItem.hasHalfPortion && selectedItem.halfSellingPrice != null && (
+                      <p className="mt-0.5 text-sm font-medium text-[#5c6e60]">
+                        Half plate: {formatINR(selectedItem.halfSellingPrice)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
