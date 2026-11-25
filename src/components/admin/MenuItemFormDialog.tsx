@@ -16,6 +16,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Image as ImageIcon, Tag, UtensilsCrossed, X } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 import type { Category, MenuItem } from "@/types/domain";
 import type { MenuItemInput } from "@/services/api/types";
 import { ImagePicker } from "./ImagePicker";
@@ -380,13 +381,13 @@ export function MenuItemFormDialog({
                 onFileSelect={setSelectedFile}
                 onProcessingChange={setImageProcessing}
               />
-              {error && (
-                <p className="text-sm text-destructive" role="alert">
-                  {error}
-                </p>
-              )}
             </Card>
           </div>
+          {error && (
+            <Alert variant="destructive" role="alert" className="shrink-0 py-3">
+              {error}
+            </Alert>
+          )}
           <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
             <Button
               variant="outline"

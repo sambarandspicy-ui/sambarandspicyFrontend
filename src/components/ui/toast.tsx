@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertCircle,
   CheckCircle2,
@@ -35,18 +36,23 @@ export function Toast({
     info: Info,
   };
   const Icon = icons[variant];
-  return (
+  const node = (
     <div
       className={cn(
-        "fixed right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[80] flex w-[calc(100%-1.5rem)] max-w-sm items-center gap-3 rounded-xl border bg-card p-3 text-sm font-semibold text-card-foreground shadow-xl sm:right-5 sm:bottom-5",
+        "pointer-events-auto fixed right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[80] flex w-[calc(100%-1.5rem)] max-w-sm items-center gap-3 rounded-xl border bg-card p-3 text-sm font-semibold text-card-foreground shadow-xl sm:right-5 sm:bottom-5",
         variant === "success" && "border-green-300",
         variant === "warning" && "border-amber-300",
-        variant === "destructive" && "border-red-300",
+        variant === "destructive" &&
+          "border-red-300 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100",
         variant === "info" && "border-blue-300",
       )}
       role={variant === "destructive" ? "alert" : "status"}
     >
-      <Icon size={18} aria-hidden="true" />
+      <Icon
+        size={18}
+        className={variant === "destructive" ? "shrink-0 text-destructive" : "shrink-0"}
+        aria-hidden="true"
+      />
       <span className="min-w-0 flex-1">{message}</span>
       <button
         type="button"
@@ -58,4 +64,5 @@ export function Toast({
       </button>
     </div>
   );
+  return typeof document !== "undefined" ? createPortal(node, document.body) : node;
 }

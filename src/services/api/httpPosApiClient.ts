@@ -202,6 +202,7 @@ export class HttpPosApiClient implements PosApiClient {
     if (!res.ok) {
       let body: {
         code?: string;
+        error?: string;
         message?: string;
         fieldErrors?: Record<string, string>;
         requestId?: string;
@@ -218,9 +219,13 @@ export class HttpPosApiClient implements PosApiClient {
         this.expiryNotified = true;
         notifySessionExpired();
       }
+      const message =
+        body.message?.trim() ||
+        body.error?.trim() ||
+        "The request could not be completed.";
       throw new ApiError(
         body.code ?? `HTTP_${res.status}`,
-        body.message ?? "The request could not be completed.",
+        message,
         res.status,
         body.fieldErrors,
         body.requestId ?? res.headers.get("x-request-id") ?? undefined,

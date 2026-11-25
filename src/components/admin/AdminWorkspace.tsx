@@ -52,9 +52,28 @@ export function AdminWorkspace() {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [resetUser, setResetUser] = useState<User | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
-  const [message, setMessage] = useState("");
+  const [toast, setToast] = useState<{
+    message: string;
+    variant: "success" | "destructive";
+  } | null>(null);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  async function runMutation(
+    task: () => Promise<void>,
+    successMessage: string,
+    fallbackError: string,
+  ) {
+    try {
+      await task();
+      setToast({ message: successMessage, variant: "success" });
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.message.trim() ? e.message : fallbackError;
+      setToast({ message: msg, variant: "destructive" });
+      throw e;
+    }
+  }
   const categories = catalog.categories.data ?? [],
     items = catalog.menuItems.data ?? [],
     users = controls.users.data ?? [];
@@ -90,10 +109,15 @@ export function AdminWorkspace() {
           id: confirm.value.id,
           input: { is_active: !confirm.value.is_active },
         });
-      setMessage("Changes saved.");
+      setToast({ message: "Changes saved.", variant: "success" });
       setConfirm(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save changes.");
+      const msg =
+        e instanceof Error && e.message.trim()
+          ? e.message
+          : "Could not save changes.";
+      setError(msg);
+      setToast({ message: msg, variant: "destructive" });
     }
   }
   if (!user) return null;
@@ -108,7 +132,13 @@ export function AdminWorkspace() {
           </StatusBadge>
         }
       />
-      {message && <Toast message={message} onDismiss={() => setMessage("")} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => setToast(null)}
+        />
+      )}
       <nav
         className="flex max-w-full flex-nowrap gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
         role="group"
@@ -153,10 +183,13 @@ export function AdminWorkspace() {
           users={users}
           admin={admin}
           pending={controls.updateStore.isPending}
-          onSave={async (v) => {
-            await controls.updateStore.mutateAsync(v);
-            setMessage("Store details saved.");
-          }}
+          onSave={(v) =>
+            runMutation(
+              () => controls.updateStore.mutateAsync(v).then(() => undefined),
+              "Store details saved.",
+              "Could not save store details.",
+            )
+          }
           onManage={() => setTab("users")}
           onCategory={() => setCategoryDialog({ item: null })}
           onMenu={() => setMenuDialog({ item: null })}
@@ -212,29 +245,34 @@ export function AdminWorkspace() {
             catalog.createCategory.isPending ||
             catalog.updateCategory.isPending
           }
-          onSave={async (value, file) => {
-            let savedCat: Category;
-            if (categoryDialog.item)
-              savedCat = await catalog.updateCategory.mutateAsync({
-                id: categoryDialog.item.id,
-                input: value,
-              });
-            else savedCat = await catalog.createCategory.mutateAsync(value);
-            if (file && savedCat?.id) {
-              setUploading(true);
-              try {
-                await catalog.uploadCategoryImage.mutateAsync({ id: savedCat.id, file });
-              } catch {
-                setCategoryDialog({ item: savedCat });
-                throw new Error(
-                  "Category saved, but the image upload failed. Retry to upload the image.",
-                );
-              } finally {
-                setUploading(false);
-              }
-            }
-            setMessage("Category saved.");
-          }}
+          onSave={(value, file) =>
+            runMutation(
+              async () => {
+                let savedCat: Category;
+                if (categoryDialog.item)
+                  savedCat = await catalog.updateCategory.mutateAsync({
+                    id: categoryDialog.item.id,
+                    input: value,
+                  });
+                else savedCat = await catalog.createCategory.mutateAsync(value);
+                if (file && savedCat?.id) {
+                  setUploading(true);
+                  try {
+                    await catalog.uploadCategoryImage.mutateAsync({ id: savedCat.id, file });
+                  } catch {
+                    setCategoryDialog({ item: savedCat });
+                    throw new Error(
+                      "Category saved, but the image upload failed. Retry to upload the image.",
+                    );
+                  } finally {
+                    setUploading(false);
+                  }
+                }
+              },
+              "Category saved.",
+              "Could not save category.",
+            )
+          }
         />
       )}
       {admin && menuDialog && (
@@ -248,50 +286,65 @@ export function AdminWorkspace() {
             catalog.createMenuItem.isPending ||
             catalog.updateMenuItem.isPending
           }
-          onSave={async (value, file) => {
-            let savedItem: MenuItem;
-            if (menuDialog.item)
-              savedItem = await catalog.updateMenuItem.mutateAsync({
-                id: menuDialog.item.id,
-                input: value,
-              });
-            else savedItem = await catalog.createMenuItem.mutateAsync(value);
-            if (file && savedItem?.id) {
-              setUploading(true);
-              try {
-                await catalog.uploadMenuItemImage.mutateAsync({ id: savedItem.id, file });
-              } catch {
-                setMenuDialog({ item: savedItem });
-                throw new Error(
-                  "Dish saved, but the image upload failed. Retry to upload the image.",
-                );
-              } finally {
-                setUploading(false);
-              }
-            }
-            setMessage("Menu item saved.");
-          }}
+          onSave={(value, file) =>
+            runMutation(
+              async () => {
+                let savedItem: MenuItem;
+                if (menuDialog.item)
+                  savedItem = await catalog.updateMenuItem.mutateAsync({
+                    id: menuDialog.item.id,
+                    input: value,
+                  });
+                else savedItem = await catalog.createMenuItem.mutateAsync(value);
+                if (file && savedItem?.id) {
+                  setUploading(true);
+                  try {
+                    await catalog.uploadMenuItemImage.mutateAsync({ id: savedItem.id, file });
+                  } catch {
+                    setMenuDialog({ item: savedItem });
+                    throw new Error(
+                      "Dish saved, but the image upload failed. Retry to upload the image.",
+                    );
+                  } finally {
+                    setUploading(false);
+                  }
+                }
+              },
+              "Menu item saved.",
+              "Could not save dish.",
+            )
+          }
         />
       )}
       {admin && imageItem && (
-        <MenuImageDialog item={imageItem} onClose={() => setImageItem(null)} onSave={async (file, removed) => {
-          if (file) {
-            await catalog.uploadMenuItemImage.mutateAsync({ id: imageItem.id, file });
-          } else if (removed) {
-            await catalog.updateMenuItem.mutateAsync({ id: imageItem.id, input: { image_path: null } });
-          }
-          setMessage("Dish photo saved.");
-        }} />
+        <MenuImageDialog item={imageItem} onClose={() => setImageItem(null)} onSave={(file, removed) =>
+          runMutation(
+            async () => {
+              if (file) {
+                await catalog.uploadMenuItemImage.mutateAsync({ id: imageItem.id, file });
+              } else if (removed) {
+                await catalog.updateMenuItem.mutateAsync({ id: imageItem.id, input: { image_path: null } });
+              }
+            },
+            "Dish photo saved.",
+            "Could not save dish photo.",
+          )
+        } />
       )}
       {admin && imageCategory && (
-        <MenuImageDialog kind="category" item={imageCategory} onClose={() => setImageCategory(null)} onSave={async (file, removed) => {
-          if (file) {
-            await catalog.uploadCategoryImage.mutateAsync({ id: imageCategory.id, file });
-          } else if (removed) {
-            await catalog.updateCategory.mutateAsync({ id: imageCategory.id, input: { image_path: null } });
-          }
-          setMessage("Category photo saved.");
-        }} />
+        <MenuImageDialog kind="category" item={imageCategory} onClose={() => setImageCategory(null)} onSave={(file, removed) =>
+          runMutation(
+            async () => {
+              if (file) {
+                await catalog.uploadCategoryImage.mutateAsync({ id: imageCategory.id, file });
+              } else if (removed) {
+                await catalog.updateCategory.mutateAsync({ id: imageCategory.id, input: { image_path: null } });
+              }
+            },
+            "Category photo saved.",
+            "Could not save category photo.",
+          )
+        } />
       )}
       {admin && editUser && (
         <EditUserDialog
@@ -299,10 +352,16 @@ export function AdminWorkspace() {
           users={users}
           onClose={() => setEditUser(null)}
           pending={controls.updateUser.isPending}
-          onSave={async (input) => {
-            await controls.updateUser.mutateAsync({ id: editUser.id, input });
-            setMessage("User details saved.");
-          }}
+          onSave={(input) =>
+            runMutation(
+              () =>
+                controls.updateUser
+                  .mutateAsync({ id: editUser.id, input })
+                  .then(() => undefined),
+              "User details saved.",
+              "Could not save user details.",
+            )
+          }
         />
       )}
       {admin && resetUser && (
@@ -310,13 +369,19 @@ export function AdminWorkspace() {
           user={resetUser}
           onClose={() => setResetUser(null)}
           pending={controls.resetPassword.isPending}
-          onSave={async (password) => {
-            await controls.resetPassword.mutateAsync({
-              id: resetUser.id,
-              password,
-            });
-            setMessage("Demo password reset.");
-          }}
+          onSave={(password) =>
+            runMutation(
+              () =>
+                controls.resetPassword
+                  .mutateAsync({
+                    id: resetUser.id,
+                    password,
+                  })
+                  .then(() => undefined),
+              "Demo password reset.",
+              "Could not reset password.",
+            )
+          }
         />
       )}
       <ConfirmDialog

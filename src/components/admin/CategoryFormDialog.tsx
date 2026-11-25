@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ImageIcon, Layers, X } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 import type { Category } from "@/types/domain";
 import type { CategoryInput } from "@/services/api/types";
 import { ImagePicker } from "./ImagePicker";
@@ -180,12 +181,12 @@ export function CategoryFormDialog({
                 onProcessingChange={setImageProcessing}
               />
             </Card>
-            {error && (
-              <p className="text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            )}
           </div>
+          {error && (
+            <Alert variant="destructive" role="alert" className="shrink-0 py-3">
+              {error}
+            </Alert>
+          )}
           <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
             <Button
               variant="outline"
