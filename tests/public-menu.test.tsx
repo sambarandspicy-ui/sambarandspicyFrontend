@@ -53,12 +53,24 @@ async function main() {
   assert.equal(screen.queryByRole("button", { name: /add to cart|checkout/i }), null);
   const visibleDish = publicMenu.items.find(item => item.id !== hidden.id)!;
   await screen.findByText(visibleDish.name);
+  const initialHistoryLength = dom.window.history.length;
   fireEvent.click(screen.getByRole("button", { name: new RegExp(visibleDish.name) }));
   const detailDialog = await screen.findByRole("dialog");
   assert.ok(detailDialog.textContent?.includes(visibleDish.name));
   if (visibleDish.description) assert.ok(detailDialog.textContent?.includes(visibleDish.description));
-  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  assert.equal(dom.window.history.length, initialHistoryLength + 1, "opening dish modal pushes a history entry");
+  dom.window.history.back();
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(screen.queryByRole("dialog"), null, "browser back button closes dish modal without leaving the page");
+  assert.equal(dom.window.location.href, "http://localhost/", "back button stays on the menu page");
+
+  fireEvent.click(screen.getByRole("button", { name: new RegExp(visibleDish.name) }));
+  await screen.findByRole("dialog");
+  const closeButton = screen.getByRole("button", { name: "Close" });
+  assert.ok(closeButton.className.includes("bg-white"), "close button has high-contrast backing over dish image");
+  fireEvent.click(closeButton);
   assert.equal(screen.queryByRole("dialog"), null);
+  await new Promise(resolve => setTimeout(resolve, 50));
   localStorage.removeItem("sambar-spicy-public-menu-v1:mock");
   api.getPublicMenu = async () => { throw new Error("offline"); };
   await client.invalidateQueries({ queryKey: ["public-menu"] });
