@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Sheet,
   SheetContent,
@@ -13,16 +14,43 @@ import { Topbar } from "@/components/layout/topbar";
 import { RoleGate } from "@/components/layout/role-gate";
 import { WorkspaceLoading } from "@/components/shared/WorkspaceLoading";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
+import { reconcileSyncedBillInCache } from "@/hooks/queries";
+import { useBillingSync } from "@/hooks/useBillingSync";
+import { billingSyncManager } from "@/services/offline/billingSyncManager";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAuth();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { pendingCount, failedCount } = useBillingSync();
+  const hasUnsyncedBills = pendingCount > 0 || failedCount > 0;
+
   useEffect(() => {
     if (ready && !user) router.replace("/login");
   }, [ready, user, router]);
+  useEffect(() => {
+    if (!ready || !user?.id) return;
+    const releaseSync = billingSyncManager.acquire();
+    const unsubscribe = billingSyncManager.onBillSynced((syncedBill, clientBillId) => {
+      reconcileSyncedBillInCache(queryClient, syncedBill, clientBillId);
+    });
+    return () => {
+      unsubscribe();
+      releaseSync();
+    };
+  }, [ready, user?.id, queryClient]);
+  useEffect(() => {
+    if (!hasUnsyncedBills || typeof window === "undefined") return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsyncedBills]);
   if (!ready || !user)
     return <WorkspaceLoading />;
   const title =

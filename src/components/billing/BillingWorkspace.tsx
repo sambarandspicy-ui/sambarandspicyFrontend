@@ -1,17 +1,28 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { DietaryBadge } from "@/components/shared/dietary-badge";
 import { ReceiptText } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
-import { useBilling, useCatalog } from "@/hooks/queries";
+import {
+  reconcileSyncedBillInCache,
+  useBilling,
+  useCatalog,
+  useStoreSettings,
+} from "@/hooks/queries";
 import { useBillingCart } from "@/hooks/useBillingCart";
+import { useLocalFirstCheckout } from "@/hooks/useLocalFirstCheckout";
 import { useMouseDragScroll } from "@/hooks/useMouseDragScroll";
 import { formatINR } from "@/lib/format";
-import type { BillDetail, DietaryType, PortionSize } from "@/types/domain";
-import type { BillInput, CheckoutInput } from "@/services/api/types";
-import { ApiError } from "@/types/api";
+import type {
+  BillDetail,
+  DietaryType,
+  PortionSize,
+} from "@/types/domain";
+import type { BillInput } from "@/services/api/types";
+import { billingSyncManager } from "@/services/offline/billingSyncManager";
 import { BillingHeaderBar } from "./BillingHeaderBar";
 import { MenuSearchBar } from "./MenuSearchBar";
 import { CategoryStrip } from "./CategoryStrip";
@@ -22,14 +33,17 @@ import { HeldBillsDrawer } from "./HeldBillsDrawer";
 import { CheckoutDialog } from "./CheckoutDialog";
 import { ReceiptDialog } from "./ReceiptDialog";
 import { PastBillsDrawer } from "./PastBillsDrawer";
+
 export function BillingWorkspace({
   simulatePostCheckoutFailure,
 }: {
   simulatePostCheckoutFailure?: (bill: BillDetail) => void | Promise<void>;
 } = {}) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const canEdit = user?.role !== "READ_ONLY";
   const { categories, menuItems } = useCatalog();
+  const storeSettings = useStoreSettings();
   const billing = useBilling();
   const cart = useBillingCart(canEdit);
   const dietaryDragScroll = useMouseDragScroll();
@@ -64,6 +78,22 @@ export function BillingWorkspace({
     });
     return () => cancelAnimationFrame(frame);
   }, [user?.id]);
+  useEffect(() => {
+    const unsubscribe = billingSyncManager.onBillSynced((syncedBill, clientBillId) => {
+      reconcileSyncedBillInCache(queryClient, syncedBill, clientBillId);
+      setLastCompletedBill((prev) =>
+        prev && (prev.clientBillId === clientBillId || prev.client_bill_id === clientBillId)
+          ? syncedBill
+          : prev,
+      );
+      setReceiptBill((prev) =>
+        prev && (prev.clientBillId === clientBillId || prev.client_bill_id === clientBillId)
+          ? syncedBill
+          : prev,
+      );
+    });
+    return unsubscribe;
+  }, [queryClient]);
   useEffect(() => {
     const bill = document.getElementById("billing-cart-panel");
     if (!bill || typeof IntersectionObserver === "undefined") return;
@@ -124,24 +154,28 @@ export function BillingWorkspace({
     if (cart.state.resumedBillId === id) cart.clear();
     setNotice("Held bill cancelled.");
   }
-  async function checkout(input: CheckoutInput, options?: { print?: boolean }) {
-    if (!canEdit) throw new Error("Access denied");
-    if (input.round_off && billing.capabilities.data?.round_off !== true)
-      throw new ApiError("ROUND_OFF_UNAVAILABLE", "Round off is unavailable. Refresh after updating the billing service.", 400);
-    const bill = await billing.checkout.mutateAsync(input);
-    if (process.env.NODE_ENV !== "production")
-      await simulatePostCheckoutFailure?.(bill);
-    setLastCompletedBill(bill);
-    cart.clear();
-    if (options?.print !== false) {
-      setReceiptBill(bill);
-      setIsReprint(false);
-      setReceiptOpen(true);
-    } else {
-      setNotice(`Payment saved (${bill.bill_number ?? `Bill #${bill.id}`}).`);
-    }
-    return bill;
-  }
+  const { checkout, isSaving: localSaving } = useLocalFirstCheckout({
+    user,
+    canEdit,
+    roundOffEnabled: billing.capabilities.data?.round_off === true,
+    cartItems: cart.state.items,
+    menu: menuItems.data ?? [],
+    store: storeSettings.data,
+    fallbackCheckout: billing.checkout.mutateAsync,
+    simulatePostCheckoutFailure,
+    onCheckoutCommitted: (bill, options) => {
+      setLastCompletedBill(bill);
+      cart.clear();
+      setCheckoutOpen(false);
+      if (options?.print !== false) {
+        setReceiptBill(bill);
+        setIsReprint(false);
+        setReceiptOpen(true);
+      } else {
+        setNotice(`Payment saved (${bill.bill_number ?? `Bill #${bill.id}`}).`);
+      }
+    },
+  });
   if (!user) return null;
   return (
     <div className="min-w-0 lg:flex lg:h-full lg:flex-col">
@@ -322,7 +356,7 @@ export function BillingWorkspace({
           menu={menuItems.data ?? []}
           categories={categories.data ?? []}
           onCheckout={checkout}
-          pending={billing.checkout.isPending}
+          pending={localSaving || billing.checkout.isPending}
         />
       )}{" "}
       {user.role !== "BILLING" && (

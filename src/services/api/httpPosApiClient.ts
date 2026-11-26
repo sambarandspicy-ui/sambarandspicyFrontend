@@ -46,6 +46,25 @@ function query(range?: D.ReportDateRange) {
   return s ? `?${s}` : "";
 }
 
+type WireBillDetail = D.BillDetail & { client_bill_id?: string | null };
+
+function mapBillDetail(raw: WireBillDetail): D.BillDetail {
+  if (!raw || typeof raw !== "object") return raw;
+  const clientBillId = raw.clientBillId ?? raw.client_bill_id ?? undefined;
+  if (clientBillId === undefined) return raw;
+  return { ...raw, clientBillId };
+}
+
+function serializeCheckoutBody(input: CheckoutInput) {
+  const { clientBillId, clientBillNumber, clientCreatedAt, ...rest } = input;
+  return {
+    ...rest,
+    ...(clientBillId !== undefined ? { client_bill_id: clientBillId } : {}),
+    ...(clientBillNumber !== undefined ? { client_bill_number: clientBillNumber } : {}),
+    ...(clientCreatedAt !== undefined ? { client_created_at: clientCreatedAt } : {}),
+  };
+}
+
 export class HttpPosApiClient implements PosApiClient {
   private refreshInFlight: Promise<boolean> | null = null;
   private csrfInFlight: Promise<string> | null = null;
@@ -362,42 +381,49 @@ export class HttpPosApiClient implements PosApiClient {
   }
 
   // --- Phased Fallback for Modules Pending Backend Controller Development ---
-  holdBill(input: BillInput) {
-    return this.request<D.BillDetail>("/bills/hold", {
-      method: "POST",
-      body: input,
-    });
+  async holdBill(input: BillInput) {
+    return mapBillDetail(
+      await this.request<WireBillDetail>("/bills/hold", {
+        method: "POST",
+        body: input,
+      }),
+    );
   }
-  getHeldBills() {
-    return this.request<D.BillDetail[]>("/bills/held");
+  async getHeldBills() {
+    const bills = await this.request<WireBillDetail[]>("/bills/held");
+    return bills.map(mapBillDetail);
   }
-  getBillById(id: number) {
-    return this.request<D.BillDetail>(`/bills/${id}`);
+  async getBillById(id: number) {
+    return mapBillDetail(await this.request<WireBillDetail>(`/bills/${id}`));
   }
   getBillingCapabilities() {
     return this.request<{ round_off: boolean }>("/bills/capabilities");
   }
-  listBills(range?: D.ReportDateRange) {
-    return this.request<D.BillDetail[]>(`/bills${query(range)}`);
+  async listBills(range?: D.ReportDateRange) {
+    const bills = await this.request<WireBillDetail[]>(`/bills${query(range)}`);
+    return bills.map(mapBillDetail);
   }
-  cancelHeldBill(id: number, reason: string) {
-    return this.request<D.BillDetail>(`/bills/${id}/cancel`, {
-      method: "POST",
-      body: { reason },
-    });
+  async cancelHeldBill(id: number, reason: string) {
+    return mapBillDetail(
+      await this.request<WireBillDetail>(`/bills/${id}/cancel`, {
+        method: "POST",
+        body: { reason },
+      }),
+    );
   }
   async checkoutBill(input: CheckoutInput) {
     // The server deduplicates this key. A lost response may mean the payment
     // committed, so repeat exactly the same request once before asking the
     // cashier to intervene.
+    const body = serializeCheckoutBody(input);
     for (let attempt = 0; attempt < 2; attempt++) {
       const controller = new AbortController();
       let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
-        return await Promise.race([
-          this.request<D.BillDetail>("/bills/checkout", {
+        const raw = await Promise.race([
+          this.request<WireBillDetail>("/bills/checkout", {
             method: "POST",
-            body: input,
+            body,
             headers: { "Idempotency-Key": input.checkout_key },
             signal: controller.signal,
           }),
@@ -408,6 +434,7 @@ export class HttpPosApiClient implements PosApiClient {
             }, 12_000);
           }),
         ]);
+        return mapBillDetail(raw);
       } catch (error) {
         const retryable = !(error instanceof ApiError) || error.status === 0 || error.status >= 500;
         if (attempt > 0 || !retryable) throw error;

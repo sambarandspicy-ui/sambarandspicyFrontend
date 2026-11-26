@@ -4,7 +4,16 @@ export type MenuItemInput = Omit<D.MenuItem, "id" | "created_at" | "updated_at">
 export type InventoryInput = Omit<D.InventoryItem, "id" | "created_at" | "updated_at">;
 export type BillLineInput = { menu_item_id: number; portion?: D.PortionSize; quantity: number; line_discount_amount?: number; expected_unit_price?: number };
 export type BillInput = { items: BillLineInput[]; hold_label?: string | null; note?: string | null; bill_id?: number };
-export type CheckoutInput = BillInput & { checkout_key: string; payment_method: D.PaymentMethod; tendered_amount: number; reference_number?: string | null; round_off?: boolean };
+export type CheckoutInput = BillInput & {
+  checkout_key: string;
+  payment_method: D.PaymentMethod;
+  tendered_amount: number;
+  reference_number?: string | null;
+  round_off?: boolean;
+  clientBillId?: string;
+  clientBillNumber?: string;
+  clientCreatedAt?: string;
+};
 export type PurchaseInput = { business_date: string; purchase_reference?: string | null; supplier_name?: string | null; notes?: string | null; lines: { inventory_item_id: number; quantity: number; unit_cost: number }[] };
 export type DailyEntryInput = { business_date: string; inventory_item_id: number; used_qty: number; wasted_qty: number; notes?: string | null; request_key?: string | null };
 export type AdjustmentInput = { business_date: string; inventory_item_id: number; movement_type: "ADJUSTMENT_IN" | "ADJUSTMENT_OUT"; quantity: number; notes: string };

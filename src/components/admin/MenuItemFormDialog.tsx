@@ -19,7 +19,7 @@ import { Image as ImageIcon, Tag, UtensilsCrossed, X } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import type { Category, MenuItem } from "@/types/domain";
 import type { MenuItemInput } from "@/services/api/types";
-import { ImagePicker } from "./ImagePicker";
+import { ImagePicker, validateUploadImageFile } from "./ImagePicker";
 const schema = z
   .object({
     category_id: z.string().min(1, "Choose a category"),
@@ -145,6 +145,13 @@ export function MenuItemFormDialog({
     }
     try {
       setError("");
+      if (selectedFile) {
+        const fileIssue = validateUploadImageFile(selectedFile);
+        if (fileIssue) {
+          setError(fileIssue);
+          return;
+        }
+      }
       const halfPrice =
         v.has_half_portion && v.half_selling_price?.trim()
           ? Number(v.half_selling_price)

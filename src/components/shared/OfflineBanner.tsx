@@ -1,6 +1,7 @@
 "use client";
 import { useSyncExternalStore } from "react";
 import { Alert } from "@/components/ui/alert";
+import { useBillingSync } from "@/hooks/useBillingSync";
 
 function subscribe(callback: () => void) {
   window.addEventListener("online", callback);
@@ -16,10 +17,21 @@ export function OfflineBanner() {
     () => navigator.onLine,
     () => true,
   );
-  return online ? null : (
+  const { pendingCount, failedCount } = useBillingSync();
+
+  if (online) return null;
+
+  const queueNote =
+    pendingCount > 0
+      ? ` ${pendingCount} ${pendingCount === 1 ? "bill" : "bills"} queued for auto-sync.`
+      : "";
+  const failedNote = failedCount > 0 ? ` ${failedCount} failed.` : "";
+
+  return (
     <Alert variant="warning" className="rounded-none text-center" role="status">
-      You are offline. Your current cart stays here; retry when the connection
-      returns.
+      Offline mode — You are offline, but billing &amp; printing continue
+      normally.{queueNote}
+      {failedNote}
     </Alert>
   );
 }

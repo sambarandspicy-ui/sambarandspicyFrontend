@@ -12,7 +12,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { dataMode } from "@/services/api";
 import { ResetDemoDialog } from "@/components/shared/ResetDemoDialog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { useBillingSync } from "@/hooks/useBillingSync";
 
 function subscribeOnline(cb: () => void) {
   window.addEventListener("online", cb);
@@ -27,11 +29,27 @@ export function UserMenu() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const { pendingCount, failedCount } = useBillingSync();
+  const unsyncedCount = pendingCount + failedCount;
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
     () => true,
   );
+
+  function performLogout() {
+    setLoggingOut(true);
+    void logout()
+      .then(() => {
+        setLogoutConfirmOpen(false);
+        router.replace("/login");
+      })
+      .finally(() => {
+        setLoggingOut(false);
+      });
+  }
 
   return (
     <>
@@ -96,13 +114,27 @@ export function UserMenu() {
           )}
           <DropdownMenuItem
             onSelect={() => {
-              void logout().then(() => router.replace("/login"));
+              if (unsyncedCount > 0) {
+                setLogoutConfirmOpen(true);
+                return;
+              }
+              performLogout();
             }}
           >
             <LogOut size={16} /> Logout
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        onOpenChange={setLogoutConfirmOpen}
+        title="Unsynced bills on this device"
+        description={`You have ${unsyncedCount} unsynced ${unsyncedCount === 1 ? "bill" : "bills"} on this device. They will stay safely stored locally on this browser, or you can cancel and wait for sync to finish first.`}
+        confirmLabel="Log out anyway"
+        cancelLabel="Cancel"
+        pending={loggingOut}
+        onConfirm={performLogout}
+      />
       {dataMode === "mock" && (
         <ResetDemoDialog
           open={resetOpen}

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx tests/domain.test.ts && tsx tests/portion-cart.test.ts && tsx tests/billing.test.tsx && tsx tests/billing-report.test.ts && tsx tests/round-off.test.ts && tsx tests/checkout.test.tsx && tsx tests/checkout-recovery.test.ts && tsx tests/rawbt-receipt.test.ts && tsx tests/inventory.test.tsx && tsx tests/reports.test.tsx && tsx tests/admin.test.tsx && tsx tests/category-ui.test.tsx && tsx tests/public-menu.test.tsx && tsx tests/public-menu-cache.test.ts && tsx tests/catalog-cache.test.tsx && tsx tests/http.test.ts && tsx tests/http-session.test.ts && tsx tests/uat-acceptance.test.ts && tsx tests/resilience.test.tsx && tsx tests/auth-startup.test.tsx",
+    "test": "tsx tests/domain.test.ts && tsx tests/portion-cart.test.ts && tsx tests/billing.test.tsx && tsx tests/billing-report.test.ts && tsx tests/round-off.test.ts && tsx tests/checkout.test.tsx && tsx tests/checkout-recovery.test.ts && tsx tests/local-first-billing.test.tsx && tsx tests/billing-sync-ui.test.tsx && tsx tests/optimistic-mutations.test.tsx && tsx tests/rawbt-receipt.test.ts && tsx tests/inventory.test.tsx && tsx tests/reports.test.tsx && tsx tests/admin.test.tsx && tsx tests/category-ui.test.tsx && tsx tests/public-menu.test.tsx && tsx tests/public-menu-cache.test.ts && tsx tests/catalog-cache.test.tsx && tsx tests/http.test.ts && tsx tests/http-session.test.ts && tsx tests/uat-acceptance.test.ts && tsx tests/resilience.test.tsx && tsx tests/auth-startup.test.tsx",
     "test:viewport": "node tests/viewport-audit.mjs",
     "test:daily-sales": "tsx tests/daily-sales.test.tsx"
   },
@@ -37,7 +37,7 @@
     "react-hook-form": "^7.0.0",
     "recharts": "^3.11.0",
     "tailwind-merge": "^3.0.0",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.0.0"
   },
   "devDependencies": {

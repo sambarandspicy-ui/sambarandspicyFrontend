@@ -7,6 +7,7 @@ export interface PublicMenu {
 export type PortionSize = "FULL" | "HALF";
 export type UserRole = "ADMIN" | "BILLING" | "READ_ONLY";
 export type BillStatus = "HELD" | "PAID" | "CANCELLED";
+export type BillSyncStatus = "SYNCED" | "PENDING" | "SYNCING" | "FAILED";
 export type PaymentMethod = "CASH" | "UPI" | "CARD";
 export type InventoryUnit = "PACK" | "KG" | "LITRE" | "PIECE";
 export type StockMovementType = "PURCHASE" | "DAILY_USE" | "WASTE" | "OPENING" | "ADJUSTMENT_IN" | "ADJUSTMENT_OUT";
@@ -19,7 +20,7 @@ export interface StoreSettings { id: 1; store_name: string; address: string; pho
 export interface Category { id: number; name: string; image_path: string | null; sort_order: number; is_active: boolean; created_at: string; updated_at: string }
 export interface MenuItem { id: number; category_id: number; sku: string | null; name: string; description: string | null; dietary_type: DietaryType; selling_price: number; has_half_portion?: boolean; half_selling_price?: number | null; estimated_unit_cost: number | null; half_estimated_unit_cost?: number | null; image_path: string | null; sort_order: number; is_available: boolean; created_at: string; updated_at: string }
 export interface BillCounter { business_date: string; last_sequence: number; updated_at: string }
-export interface Bill { id: number; bill_number: string | null; checkout_key: string | null; business_date: string; status: BillStatus; hold_label: string | null; item_count: number; subtotal_amount: number; discount_amount: number; round_off_amount?: number; total_amount: number; note: string | null; store_name_snapshot: string | null; store_address_snapshot: string | null; store_phone_snapshot: string | null; created_by: number; paid_by: number | null; cancelled_by: number | null; cancel_reason: string | null; created_at: string; held_at: string | null; paid_at: string | null; cancelled_at: string | null; updated_at: string }
+export interface Bill { id: number; bill_number: string | null; checkout_key: string | null; client_bill_id?: string | null; clientBillId?: string; syncStatus?: BillSyncStatus; syncError?: string | null; business_date: string; status: BillStatus; hold_label: string | null; item_count: number; subtotal_amount: number; discount_amount: number; round_off_amount?: number; total_amount: number; note: string | null; store_name_snapshot: string | null; store_address_snapshot: string | null; store_phone_snapshot: string | null; created_by: number; paid_by: number | null; cancelled_by: number | null; cancel_reason: string | null; created_at: string; held_at: string | null; paid_at: string | null; cancelled_at: string | null; updated_at: string }
 export interface BillItem { id: number; bill_id: number; menu_item_id: number; portion?: PortionSize; item_name_snapshot: string; quantity: number; unit_price: number; estimated_unit_cost_snapshot: number | null; line_discount_amount: number; line_total: number; line_net_total: number; created_at: string }
 export interface BillPayment { id: number; bill_id: number; payment_method: PaymentMethod; amount: number; tendered_amount: number; change_amount: number; reference_number: string | null; recorded_by: number; recorded_at: string }
 export interface BillDetail extends Bill { items: BillItem[]; payment: BillPayment | null; cashier_name?: string | null }

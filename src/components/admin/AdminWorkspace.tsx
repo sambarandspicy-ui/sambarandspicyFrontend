@@ -16,6 +16,7 @@ import { MenuItemsTab } from "./MenuItemsTab";
 import { CategoryFormDialog } from "./CategoryFormDialog";
 import { MenuItemFormDialog } from "./MenuItemFormDialog";
 import { MenuImageDialog } from "./MenuImageDialog";
+import { validateUploadImageFile } from "./ImagePicker";
 import { UserAccessTab } from "./UserAccessTab";
 import { EditUserDialog } from "./EditUserDialog";
 import { ResetPasswordDialog } from "./ResetPasswordDialog";
@@ -256,6 +257,8 @@ export function AdminWorkspace() {
                   });
                 else savedCat = await catalog.createCategory.mutateAsync(value);
                 if (file && savedCat?.id) {
+                  const fileIssue = validateUploadImageFile(file);
+                  if (fileIssue) throw new Error(fileIssue);
                   setUploading(true);
                   try {
                     await catalog.uploadCategoryImage.mutateAsync({ id: savedCat.id, file });
@@ -297,6 +300,8 @@ export function AdminWorkspace() {
                   });
                 else savedItem = await catalog.createMenuItem.mutateAsync(value);
                 if (file && savedItem?.id) {
+                  const fileIssue = validateUploadImageFile(file);
+                  if (fileIssue) throw new Error(fileIssue);
                   setUploading(true);
                   try {
                     await catalog.uploadMenuItemImage.mutateAsync({ id: savedItem.id, file });

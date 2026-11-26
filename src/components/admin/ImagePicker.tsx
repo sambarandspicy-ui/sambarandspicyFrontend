@@ -7,10 +7,36 @@ import { useEffect, useRef, useState } from "react";
 import { resolveAssetUrl } from "@/lib/format";
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_STORED_IMAGE_BYTES = 100_000;
-export function validateImageFile(file: Pick<File, "type" | "size">) {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
+const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"] as const;
+
+function hasAllowedExtension(name?: string): boolean {
+  if (!name) return true;
+  const dot = name.lastIndexOf(".");
+  if (dot < 0) return false;
+  const ext = name.slice(dot).toLowerCase();
+  return (ALLOWED_IMAGE_EXTENSIONS as readonly string[]).includes(ext);
+}
+
+export function validateImageFile(
+  file: Pick<File, "type" | "size"> & { name?: string },
+) {
+  if (
+    !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+    !hasAllowedExtension(file.name)
+  )
     return "Choose a JPG, PNG, or WebP image.";
   if (file.size > MAX_IMAGE_BYTES) return "Image must be 5 MB or smaller.";
+  return null;
+}
+
+export function validateUploadImageFile(
+  file: Pick<File, "type" | "size"> & { name?: string },
+) {
+  const baseIssue = validateImageFile(file);
+  if (baseIssue) return baseIssue;
+  if (file.size <= 0) return "Cannot upload an empty image file.";
+  if (file.size >= MAX_STORED_IMAGE_BYTES)
+    return "Stored image must be less than 100 KB.";
   return null;
 }
 async function compressImage(image: HTMLImageElement, crop?: { x: number; y: number; width: number; height: number }) {
@@ -96,6 +122,11 @@ export function ImagePicker({
           try {
             const compressed = await compressImage(image);
             if (selection !== selectionRef.current) return;
+            const uploadIssue = validateUploadImageFile(compressed.file);
+            if (uploadIssue) {
+              setError(uploadIssue);
+              return;
+            }
             setSource(original);
             onFileSelect?.(compressed.file);
             onChange(compressed.data);
@@ -148,6 +179,11 @@ export function ImagePicker({
     try {
       const compressed = await compressImage(image, { x, y, width: side, height: side });
       if (selection !== selectionRef.current) return;
+      const uploadIssue = validateUploadImageFile(compressed.file);
+      if (uploadIssue) {
+        setError(uploadIssue);
+        return;
+      }
       onFileSelect?.(compressed.file);
       onChange(compressed.data);
       setSource(null);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { Download, Check, Laptop, FileDown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 
@@ -38,75 +37,107 @@ function triggerDirectDownload() {
   URL.revokeObjectURL(url);
 }
 
+type PwaWindow = Window & {
+  __pwaPrompt?: BeforeInstallPromptEvent | null;
+};
+
+const emptySubscribe = () => () => {};
+
+function getStandaloneSnapshot(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    (typeof window.matchMedia === "function" &&
+      window.matchMedia("(display-mode: standalone)").matches) ||
+    (typeof window.navigator !== "undefined" &&
+      (window.navigator as unknown as { standalone?: boolean }).standalone ===
+        true)
+  );
+}
+
+function subscribeStandalone(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const media =
+    typeof window.matchMedia === "function"
+      ? window.matchMedia("(display-mode: standalone)")
+      : null;
+  media?.addEventListener?.("change", onStoreChange);
+  window.addEventListener("appinstalled", onStoreChange);
+  return () => {
+    media?.removeEventListener?.("change", onStoreChange);
+    window.removeEventListener("appinstalled", onStoreChange);
+  };
+}
+
+function getDeferredPromptSnapshot(): BeforeInstallPromptEvent | null {
+  if (typeof window === "undefined") return null;
+  return (window as unknown as PwaWindow).__pwaPrompt ?? null;
+}
+
+function subscribeDeferredPrompt(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const globalWindow = window as unknown as PwaWindow;
+
+  const handleBeforeInstall = (e: Event) => {
+    e.preventDefault();
+    globalWindow.__pwaPrompt = e as BeforeInstallPromptEvent;
+    onStoreChange();
+  };
+
+  const handlePromptAvailable = () => {
+    onStoreChange();
+  };
+
+  const handleAppInstalled = () => {
+    globalWindow.__pwaPrompt = null;
+    onStoreChange();
+  };
+
+  window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+  window.addEventListener("pwa-prompt-available", handlePromptAvailable);
+  window.addEventListener("appinstalled", handleAppInstalled);
+  return () => {
+    window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.removeEventListener("pwa-prompt-available", handlePromptAvailable);
+    window.removeEventListener("appinstalled", handleAppInstalled);
+  };
+}
+
 export function InstallAppButton() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const isReady = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+  const standaloneInstalled = useSyncExternalStore(
+    subscribeStandalone,
+    getStandaloneSnapshot,
+    () => false,
+  );
+  const deferredPrompt = useSyncExternalStore(
+    subscribeDeferredPrompt,
+    getDeferredPromptSnapshot,
+    () => null,
+  );
+  const [installedByPrompt, setInstalledByPrompt] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const isInstalled = standaloneInstalled || installedByPrompt;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    // Check if app is already running in standalone (PWA) mode
-    const isStandalone =
-      (typeof window.matchMedia === "function" &&
-        window.matchMedia("(display-mode: standalone)").matches) ||
-      (typeof window.navigator !== "undefined" &&
-        (window.navigator as unknown as { standalone?: boolean }).standalone ===
-          true);
-    if (isStandalone) {
-      setIsInstalled(true);
-    }
-
-    // Check if window.__pwaPrompt was captured early in <head>
-    const globalWindow = window as unknown as {
-      __pwaPrompt?: BeforeInstallPromptEvent | null;
-    };
-    if (globalWindow.__pwaPrompt) {
-      setDeferredPrompt(globalWindow.__pwaPrompt);
-    }
-
-    const handleBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      const promptEvent = e as BeforeInstallPromptEvent;
-      globalWindow.__pwaPrompt = promptEvent;
-      setDeferredPrompt(promptEvent);
-    };
-
-    const handlePromptAvailable = () => {
-      if (globalWindow.__pwaPrompt) {
-        setDeferredPrompt(globalWindow.__pwaPrompt);
-      }
-    };
-
     const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-      globalWindow.__pwaPrompt = null;
+      setInstalledByPrompt(true);
       setDialogOpen(false);
     };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
-    window.addEventListener("pwa-prompt-available", handlePromptAvailable);
     window.addEventListener("appinstalled", handleAppInstalled);
-    setIsReady(true);
-
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
-      window.removeEventListener("pwa-prompt-available", handlePromptAvailable);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
   async function handleInstall() {
     const globalWindow =
-      typeof window !== "undefined"
-        ? (window as unknown as {
-            __pwaPrompt?: BeforeInstallPromptEvent | null;
-          })
-        : null;
+      typeof window !== "undefined" ? (window as unknown as PwaWindow) : null;
     const prompt = deferredPrompt || globalWindow?.__pwaPrompt;
 
     if (prompt) {
@@ -114,9 +145,11 @@ export function InstallAppButton() {
         await prompt.prompt();
         const choice = await prompt.userChoice;
         if (choice.outcome === "accepted") {
-          setIsInstalled(true);
-          setDeferredPrompt(null);
-          if (globalWindow) globalWindow.__pwaPrompt = null;
+          setInstalledByPrompt(true);
+          if (globalWindow) {
+            globalWindow.__pwaPrompt = null;
+            window.dispatchEvent(new Event("pwa-prompt-available"));
+          }
           setDialogOpen(false);
           return;
         }

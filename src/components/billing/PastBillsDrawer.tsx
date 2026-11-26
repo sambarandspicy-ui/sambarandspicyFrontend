@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { QueryError } from "@/components/shared/QueryState";
 import { useBills, type BillFilters } from "@/hooks/queries";
+import { useBillingSync } from "@/hooks/useBillingSync";
 import { getBusinessDateIST, formatINR } from "@/lib/format";
 import type { BillDetail } from "@/types/domain";
 function initialFilters(): BillFilters {
@@ -39,6 +40,49 @@ export function PastBillsDrawer({
 }) {
   const [filters, setFilters] = useState(initialFilters);
   const bills = useBills(filters, open);
+  const { queuedBills, retryBill } = useBillingSync();
+
+  const mergedBills = useMemo(() => {
+    const serverBills = bills.data ?? [];
+    const seenClientIds = new Set<string>();
+    const seenBillNumbers = new Set<string>();
+    const seenCheckoutKeys = new Set<string>();
+
+    for (const sb of serverBills) {
+      const clientId = sb.clientBillId ?? sb.client_bill_id;
+      if (clientId) seenClientIds.add(clientId);
+      if (sb.bill_number) seenBillNumbers.add(sb.bill_number);
+      if (sb.checkout_key) seenCheckoutKeys.add(sb.checkout_key);
+    }
+
+    const search = filters.search.trim().toLowerCase();
+    const unsyncedMatches = queuedBills
+      .map((q) => q.localBill)
+      .filter((lb) => {
+        const clientId = lb.clientBillId ?? lb.client_bill_id;
+        if (clientId && seenClientIds.has(clientId)) return false;
+        if (lb.bill_number && seenBillNumbers.has(lb.bill_number)) return false;
+        if (lb.checkout_key && seenCheckoutKeys.has(lb.checkout_key)) return false;
+        if (filters.from && lb.business_date < filters.from) return false;
+        if (filters.to && lb.business_date > filters.to) return false;
+        if (
+          filters.paymentMethod !== "ALL" &&
+          lb.payment?.payment_method !== filters.paymentMethod
+        ) {
+          return false;
+        }
+        if (search && !lb.bill_number?.toLowerCase().includes(search)) {
+          return false;
+        }
+        return lb.status === "PAID" || lb.status === "CANCELLED";
+      });
+
+    return [...unsyncedMatches, ...serverBills].sort((a, b) =>
+      (b.paid_at ?? b.cancelled_at ?? b.created_at).localeCompare(
+        a.paid_at ?? a.cancelled_at ?? a.created_at,
+      ),
+    );
+  }, [bills.data, queuedBills, filters]);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right">
@@ -110,17 +154,17 @@ export function PastBillsDrawer({
           </p>
         ) : (
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-            {bills.isLoading ? (
+            {bills.isLoading && !mergedBills.length ? (
               <p className="flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
                 Loading bills...
               </p>
-            ) : bills.isError ? (
+            ) : bills.isError && !mergedBills.length ? (
               <QueryError
                 onRetry={() => {
                   void bills.refetch();
                 }}
               />
-            ) : !bills.data?.length ? (
+            ) : !mergedBills.length ? (
               <div className="flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
                 <p>No bills found for these filters.</p>
                 <Button
@@ -132,8 +176,24 @@ export function PastBillsDrawer({
                 </Button>
               </div>
             ) : (
-              bills.data.map((b) => (
-                <article key={b.id}>
+              <>
+                {bills.isError && (
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    <span>Showing offline queued bills; server history unavailable.</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => void bills.refetch()}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                )}
+                {mergedBills.map((b) => {
+                  const clientId = b.clientBillId ?? b.client_bill_id;
+                  return (
+                <article key={clientId ?? b.id}>
                   <Card className="rounded-xl border border-border bg-card p-4 text-sm">
                     <div className="flex justify-between gap-3 [&_p]:mt-1 [&_p]:text-xs [&_p]:text-muted-foreground">
                       <div>
@@ -159,12 +219,42 @@ export function PastBillsDrawer({
                       {b.cashier_name ?? `User #${b.paid_by ?? b.created_by}`}{" "}
                       &middot; {b.item_count} items
                     </p>
+                    {b.syncStatus === "FAILED" && b.syncError && (
+                      <p className="mt-1 text-xs text-destructive" role="alert">
+                        {b.syncError}
+                      </p>
+                    )}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">{b.status}</Badge>
                       {b.payment && (
                         <Badge variant="secondary">
                           {b.payment.payment_method}
                         </Badge>
+                      )}
+                      {b.syncStatus && b.syncStatus !== "SYNCED" && (
+                        <Badge
+                          variant={b.syncStatus === "FAILED" ? "destructive" : "outline"}
+                          title={b.syncError ?? undefined}
+                        >
+                          {b.syncStatus === "FAILED"
+                            ? "Sync failed"
+                            : b.syncStatus === "SYNCING"
+                              ? "Syncing"
+                              : "Pending sync"}
+                        </Badge>
+                      )}
+                      {b.syncStatus === "FAILED" && clientId && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="min-h-11"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void retryBill(clientId);
+                          }}
+                        >
+                          Retry
+                        </Button>
                       )}
                       {b.status === "PAID" && (
                         <Button
@@ -181,7 +271,9 @@ export function PastBillsDrawer({
                     </div>
                   </Card>
                 </article>
-              ))
+                  );
+                })}
+              </>
             )}
           </div>
         )}

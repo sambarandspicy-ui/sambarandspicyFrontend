@@ -94,7 +94,9 @@ export function ReceiptDialog({
       }
     };
     try {
-      if (isReprint && role !== "READ_ONLY" && !reprintLogged.current) {
+      const isUnsyncedLocalBill =
+        bill.id <= 0 || (bill.syncStatus !== undefined && bill.syncStatus !== "SYNCED");
+      if (isReprint && role !== "READ_ONLY" && !reprintLogged.current && !isUnsyncedLocalBill) {
         await onLogReprint(bill.id);
         reprintLogged.current = true;
       }
@@ -221,9 +223,12 @@ export function ReceiptDialog({
     try {
       const logo = new Image();
       logo.src = "/images/receipt-logo.png";
-      const logReprint = isReprint && role !== "READ_ONLY" && !reprintLogged.current
-        ? onLogReprint(bill.id).then(() => { reprintLogged.current = true; })
-        : Promise.resolve();
+      const isUnsyncedLocalBill =
+        bill.id <= 0 || (bill.syncStatus !== undefined && bill.syncStatus !== "SYNCED");
+      const logReprint =
+        isReprint && role !== "READ_ONLY" && !reprintLogged.current && !isUnsyncedLocalBill
+          ? onLogReprint(bill.id).then(() => { reprintLogged.current = true; })
+          : Promise.resolve();
       await Promise.all([logo.decode(), logReprint]);
       if (version !== preparationVersion.current) return;
       const url = rawBtReceiptUrl(bill, footerText, isReprint, logo);

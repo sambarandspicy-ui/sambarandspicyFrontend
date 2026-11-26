@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -8,15 +9,17 @@ import {
   DropdownMenuContent,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Menu, Moon, Sun } from "lucide-react";
+import { AlertTriangle, Bell, Clock, Menu, Moon, RefreshCw, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { UserMenu } from "@/components/layout/user-menu";
 import { links } from "@/components/layout/sidebar";
 import { InstallAppButton } from "@/components/layout/InstallAppButton";
+import { SyncQueueDialog } from "@/components/billing/SyncQueueDialog";
 import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/providers/theme-provider";
 import { useNotifications, useStoreSettings } from "@/hooks/queries";
+import { useBillingSync } from "@/hooks/useBillingSync";
 import { DailySales } from "@/components/layout/daily-sales";
 
 export function Topbar({
@@ -30,6 +33,8 @@ export function Topbar({
   const { theme, toggle } = useTheme();
   const pathname = usePathname();
   const store = useStoreSettings();
+  const [syncOpen, setSyncOpen] = useState(false);
+  const { pendingCount, failedCount, isSyncing } = useBillingSync();
   const { notifications, markRead } = useNotifications(
     user?.role === "ADMIN" || user?.role === "READ_ONLY",
   );
@@ -87,6 +92,37 @@ export function Topbar({
             ))}
         </nav>
         <div className="flex shrink-0 items-center gap-1">
+          {failedCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setSyncOpen(true)}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900/60"
+              aria-label={`${failedCount} sync failed. Open sync queue`}
+            >
+              <AlertTriangle size={13} aria-hidden="true" />
+              <span>{failedCount} sync failed</span>
+            </button>
+          ) : isSyncing || pendingCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setSyncOpen(true)}
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
+                isSyncing
+                  ? "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                  : "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+              }`}
+              aria-label="Open offline sync queue"
+            >
+              {isSyncing ? (
+                <RefreshCw size={13} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <Clock size={13} aria-hidden="true" />
+              )}
+              <span>
+                {isSyncing ? `Syncing ${pendingCount}...` : `${pendingCount} pending`}
+              </span>
+            </button>
+          ) : null}
           {user?.role === "READ_ONLY" && (
             <span className="hidden xl:inline-flex">
               <StatusBadge tone="info">Read-only account</StatusBadge>
@@ -197,6 +233,7 @@ export function Topbar({
           <UserMenu />
         </div>
       </header>
+      <SyncQueueDialog open={syncOpen} onOpenChange={setSyncOpen} />
       {pathname === "/billing" && user?.role !== "BILLING" && <DailySales />}
     </>
   );

@@ -9,8 +9,22 @@ import QRCode from "@/vendor/qrcode";
 const storageKey = "sambar-spicy-customer-menu-url";
 const subscribe = () => () => {};
 function browserMenuLink() {
-  try { return localStorage.getItem(storageKey) || `${window.location.origin}/menu`; }
-  catch { return `${window.location.origin}/menu`; }
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved && saved.trim()) {
+      const trimmed = saved.trim();
+      if (trimmed.endsWith("/menu")) return trimmed;
+      if (trimmed.endsWith("/men")) return trimmed + "u";
+      try {
+        const u = new URL(trimmed);
+        u.pathname = "/menu";
+        return u.href;
+      } catch {}
+    }
+    return `${window.location.origin}/menu`;
+  } catch {
+    return typeof window !== "undefined" ? `${window.location.origin}/menu` : "";
+  }
 }
 function normaliseMenuUrl(value: string) {
   const url = new URL(value.trim());
@@ -68,7 +82,17 @@ export function CustomerMenuTab() {
       <div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><QrCode size={22}/></span>
         <div><h2 className="text-lg font-bold">Customer menu QR</h2><p className="mt-1 text-sm text-muted-foreground">Let guests scan and browse your available dishes on their phone.</p></div></div>
       <label htmlFor="customer-menu-url" className="mt-6 block text-sm font-semibold">Customer menu link</label>
-      <div className="mt-2 flex items-center gap-2 rounded-xl border border-input bg-muted/40 px-3 transition-shadow focus-within:border-ring focus-within:ring-2 focus-within:ring-ring"><Link2 size={18} className="shrink-0 text-muted-foreground"/><input id="customer-menu-url" type="url" value={link} readOnly placeholder="https://your-website.com/menu" className="min-h-12 min-w-0 flex-1 cursor-default border-none bg-transparent text-sm text-foreground/90 outline-none ring-0 focus:outline-none focus:ring-0 select-all" /></div>
+      <div className="mt-2 flex items-center gap-2 rounded-xl border border-input bg-muted/40 px-3 transition-shadow focus-within:border-ring focus-within:ring-2 focus-within:ring-ring">
+        <Link2 size={18} className="shrink-0 text-muted-foreground" />
+        <input
+          id="customer-menu-url"
+          type="url"
+          value={link}
+          readOnly
+          placeholder="https://your-website.com/menu"
+          className="min-h-12 min-w-0 flex-1 cursor-default border-none bg-transparent text-sm text-foreground/90 outline-none ring-0 focus:outline-none focus:ring-0 select-all"
+        />
+      </div>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">Use the website address customers can reach. Print the QR and display it in your shop. If using a local network address, phones must be on the same network.</p>
       {localOnly && <p role="alert" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">This link uses localhost, which opens the customer&apos;s own phone. Enter your shop&apos;s reachable website address to download a usable QR.</p>}
       {result.error && <p role="alert" className="mt-3 text-sm text-destructive">{result.error}</p>}

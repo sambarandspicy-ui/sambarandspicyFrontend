@@ -132,6 +132,7 @@ export function CheckoutDialog({
     }
   }
   async function submit(values: Values, printReceipt = true) {
+    if (submitted.current) return;
     if (stale) {
       setError(
         "A menu price or availability changed. Remove and re-add the affected item before checkout.",
