@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Category, MenuItem, PortionSize } from "@/types/domain";
 import { DishCard } from "./DishCard";
+
 export type SortMode = "default" | "low" | "high" | "name";
+
 export function MenuGrid({
   items,
   categories,
@@ -36,18 +38,22 @@ export function MenuGrid({
   onAdd: (item: MenuItem, portion: PortionSize) => void;
 }) {
   const [compact, setCompact] = useState(false);
+
   return (
-    <section className="mt-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-bold">{title}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+    <section className="mt-3 sm:mt-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-bold text-foreground sm:text-base">
+            {title}
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {loading
               ? "Loading menu..."
               : `${items.length} ${items.length === 1 ? "item" : "items"} available`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex shrink-0 items-center gap-2">
           <div
             className="flex rounded-xl border border-border bg-muted p-1"
             role="group"
@@ -58,20 +64,28 @@ export function MenuGrid({
               size="icon"
               aria-label="Photos grid"
               aria-pressed={!compact}
-              className={!compact ? "bg-card shadow-sm" : undefined}
+              className={
+                !compact
+                  ? "size-9 bg-card text-primary shadow-2xs sm:size-9 dark:text-[#ebc96f]"
+                  : "size-9 sm:size-9"
+              }
               onClick={() => setCompact(false)}
             >
-              <LayoutGrid size={17} />
+              <LayoutGrid size={16} aria-hidden="true" />
             </Button>
             <Button
               variant={compact ? "secondary" : "ghost"}
               size="icon"
               aria-label="Compact list"
               aria-pressed={compact}
-              className={compact ? "bg-card shadow-sm" : undefined}
+              className={
+                compact
+                  ? "size-9 bg-card text-primary shadow-2xs sm:size-9 dark:text-[#ebc96f]"
+                  : "size-9 sm:size-9"
+              }
               onClick={() => setCompact(true)}
             >
-              <List size={17} />
+              <List size={16} aria-hidden="true" />
             </Button>
           </div>
           <ChoiceMenu
@@ -87,16 +101,17 @@ export function MenuGrid({
           />
         </div>
       </div>
+
       {error ? (
         <QueryError onRetry={onRetry} />
       ) : loading ? (
         <div
-          className="grid grid-cols-2 gap-3"
+          className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-4"
           aria-label="Loading menu"
           role="status"
         >
           {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton className="h-40" key={i} />
+            <Skeleton className="h-44 rounded-2xl" key={i} />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -114,15 +129,14 @@ export function MenuGrid({
           className={
             compact
               ? "grid grid-cols-1 gap-2.5 md:grid-cols-2"
-              : "grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4"
+              : "grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-4"
           }
         >
           {items.map((item) => (
             <DishCard
               key={item.id}
               category={
-                categories.find((c) => c.id === item.category_id)?.name ??
-                "Menu"
+                categories.find((c) => c.id === item.category_id)?.name ?? "Menu"
               }
               compact={compact}
               item={item}

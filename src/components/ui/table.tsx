@@ -121,7 +121,7 @@ export function TableRow({
     <tr
       role="row"
       className={cn(
-        "border-b border-border transition-colors hover:bg-muted/50",
+        "border-b border-border transition-colors hover:bg-muted/60",
         className,
       )}
       {...props}

@@ -1,13 +1,18 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/shared/form-field";
 
 import { useState } from "react";
+import { Lock } from "lucide-react";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
 } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -60,50 +65,50 @@ export function ResetPasswordDialog({
       }}
     >
       <DialogContent>
-        <DialogTitle>Reset password</DialogTitle>
-        <DialogDescription>
-          Set a new demo password for {user.full_name}.
-        </DialogDescription>
+        <DialogHeader>
+          <DialogTitle>Reset password</DialogTitle>
+          <DialogDescription>
+            Set a new demo password for {user.full_name}.
+          </DialogDescription>
+        </DialogHeader>
         <form
-          className="space-y-4 p-5 [&_label]:block [&_label]:text-sm [&_label]:font-semibold [&_label_input:not([type=checkbox])]:mt-2 [&_label_select]:mt-2 [&_label_textarea]:mt-2"
+          className="flex min-h-0 w-full flex-1 flex-col overflow-hidden"
           onSubmit={(e) => void handleSubmit(save)(e)}
         >
-          <label>
-            New password
-            <Input
-              type="password"
-              autoComplete="new-password"
-              {...register("password")}
-            />
-          </label>
-          {errors.password && (
-            <p className="text-sm text-destructive" role="alert">
-              {errors.password.message}
-            </p>
-          )}
-          <label>
-            Confirm password
-            <Input
-              type="password"
-              autoComplete="new-password"
-              {...register("confirm")}
-            />
-          </label>
-          {errors.confirm && (
-            <p className="text-sm text-destructive" role="alert">
-              {errors.confirm.message}
-            </p>
-          )}
-          {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+          <DialogBody className="space-y-4">
+            <FormField label="New password" htmlFor="reset-password-new" error={errors.password?.message} required>
+              <Input
+                id="reset-password-new"
+                type="password"
+                autoComplete="new-password"
+                leadingIcon={<Lock size={16} />}
+                showPasswordToggle
+                error={!!errors.password}
+                {...register("password")}
+              />
+            </FormField>
+            <FormField label="Confirm password" htmlFor="reset-password-confirm" error={errors.confirm?.message} required>
+              <Input
+                id="reset-password-confirm"
+                type="password"
+                autoComplete="new-password"
+                leadingIcon={<Lock size={16} />}
+                showPasswordToggle
+                error={!!errors.confirm}
+                {...register("confirm")}
+              />
+            </FormField>
+            {error && (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            )}
+          </DialogBody>
+          <DialogFooter>
             <Button
               variant="outline"
               type="button"
-              className="min-h-11"
+              className="min-h-11 sm:min-h-10"
               onClick={onClose}
             >
               Cancel
@@ -111,12 +116,12 @@ export function ResetPasswordDialog({
             <Button
               variant="default"
               type="submit"
-              className="min-h-11"
-              disabled={pending}
+              className="min-h-11 sm:min-h-10"
+              loading={pending}
             >
               Reset password
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

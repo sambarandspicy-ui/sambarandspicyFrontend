@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export function FilterToolbar({
@@ -18,41 +18,32 @@ export function FilterToolbar({
   shortcut?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="relative min-w-48 flex-1">
-        <Search
-          aria-hidden="true"
-          className="absolute top-3 left-3 size-4 text-muted-foreground"
-        />
+    <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="min-w-0 w-full sm:min-w-48 sm:flex-1">
         <Input
           aria-label={placeholder}
           placeholder={placeholder}
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          className="pr-12 pl-9"
+          leadingIcon={<Search className="size-4" />}
+          clearable
+          clearLabel="Clear search"
+          onClear={() => onSearchChange("")}
+          trailingIcon={
+            !search && shortcut ? (
+              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                /
+              </kbd>
+            ) : undefined
+          }
         />
-        {search ? (
-          <button
-            type="button"
-            aria-label="Clear search"
-            onClick={() => onSearchChange("")}
-            className="absolute top-0 right-0 grid size-10 place-items-center"
-          >
-            <X className="size-4" />
-          </button>
-        ) : (
-          shortcut && (
-            <span
-              aria-hidden="true"
-              className="absolute top-2.5 right-3 text-xs text-muted-foreground"
-            >
-              /
-            </span>
-          )
-        )}
       </div>
-      {children}
-      <div className="flex flex-wrap gap-2">{actions}</div>
+      {children && (
+        <div className="flex flex-wrap items-center gap-2">{children}</div>
+      )}
+      {actions && (
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+      )}
     </div>
   );
 }

@@ -4,8 +4,11 @@ import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { BillDetail, UserRole } from "@/types/domain";
@@ -272,19 +275,17 @@ export function ReceiptDialog({
   if (preview) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[92vh] max-w-md flex-col overflow-hidden p-0">
-          <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
-            <div>
-              <DialogTitle className="text-base font-bold">
-                Receipt Preview
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                {bill.bill_number ?? `Bill #${bill.id}`}
-              </DialogDescription>
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto bg-muted/40 p-4">
-            <div ref={receipt} className="mx-auto w-fit max-w-full overflow-hidden rounded-sm bg-white shadow-md">
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold">
+              Receipt Preview
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              {bill.bill_number ?? `Bill #${bill.id}`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody className="bg-muted/40">
+            <div ref={receipt} className="mx-auto w-fit max-w-full overflow-x-auto rounded-sm bg-white shadow-md">
               <div
                 className="relative"
                 data-preview-raster={
@@ -306,25 +307,24 @@ export function ReceiptDialog({
                 )}
               </div>
             </div>
-          </div>
+          </DialogBody>
           {error && (
-            <div className="border-t border-destructive/20 bg-destructive/10 px-4 py-2 text-xs text-destructive">
+            <div className="border-t border-destructive/20 bg-destructive/10 px-4 py-2 text-xs text-destructive" role="alert">
               {error}
             </div>
           )}
-          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-card p-4">
+          <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
             <Button
-              disabled={printing}
+              loading={printing}
+              leftIcon={<Printer size={16} aria-hidden="true" />}
               onClick={() => void (android ? printRawBt() : print())}
-              className="gap-2"
             >
-              <Printer size={16} aria-hidden="true" />
               {printing ? "Preparing print..." : "Print"}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
@@ -341,16 +341,21 @@ export function ReceiptDialog({
       </div>
       <Dialog open={open && !!error} onOpenChange={onOpenChange}>
         <DialogContent>
-          <DialogTitle>Could not print receipt</DialogTitle>
-          <DialogDescription>{error}</DialogDescription>
-          <div className="flex flex-wrap justify-end gap-2">
+          <DialogHeader>
+            <DialogTitle>Could not print receipt</DialogTitle>
+            <DialogDescription>{error}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
-            <Button disabled={printing} onClick={() => void (android ? printRawBt() : print())}>
+            <Button
+              loading={printing}
+              onClick={() => void (android ? printRawBt() : print())}
+            >
               Retry printing
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

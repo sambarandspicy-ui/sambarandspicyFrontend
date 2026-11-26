@@ -226,10 +226,10 @@ export function ImagePicker({
             <img ref={previewRef} src={source} alt={`${label} framing preview`} className="h-full w-full object-cover" style={{ objectPosition: `${horizontal}% ${vertical}%` }} />
           </div>
           <label className="block text-xs text-muted-foreground">Left / right
-            <input type="range" min="0" max="100" value={horizontal} disabled={processing} onChange={(event) => setHorizontal(Number(event.target.value))} className="block w-full accent-blue-600" />
+            <input type="range" min="0" max="100" value={horizontal} disabled={processing} onChange={(event) => setHorizontal(Number(event.target.value))} className="block w-full accent-primary" />
           </label>
           <label className="block text-xs text-muted-foreground">Up / down
-            <input type="range" min="0" max="100" value={vertical} disabled={processing} onChange={(event) => setVertical(Number(event.target.value))} className="block w-full accent-blue-600" />
+            <input type="range" min="0" max="100" value={vertical} disabled={processing} onChange={(event) => setVertical(Number(event.target.value))} className="block w-full accent-primary" />
           </label>
           <Button type="button" variant="outline" className="min-h-11" disabled={processing} onClick={() => void applyFraming()}>Apply framing</Button>
         </div>

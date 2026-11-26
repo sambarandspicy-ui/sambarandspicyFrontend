@@ -2,26 +2,29 @@
 import { useState } from "react";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
-  SheetTitle,
   SheetDescription,
-  SheetClose,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { FormField } from "@/components/shared/form-field";
-import { Clock3, X } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import { QueryError } from "@/components/shared/QueryState";
 import { z } from "zod";
 import type { BillDetail } from "@/types/domain";
 import { formatINR } from "@/lib/format";
+
 const reasonSchema = z
   .string()
   .trim()
   .min(1, "Enter a reason for cancellation.")
   .max(255);
+
 export function HeldBillsDrawer({
   open,
   onOpenChange,
@@ -51,6 +54,7 @@ export function HeldBillsDrawer({
   const [cancel, setCancel] = useState<BillDetail | null>(null);
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState("");
+
   function resume(b: BillDetail) {
     if (hasItems) setReplace(b);
     else {
@@ -58,6 +62,7 @@ export function HeldBillsDrawer({
       onOpenChange(false);
     }
   }
+
   async function cancelBill() {
     const result = reasonSchema.safeParse(reason);
     if (!result.success) {
@@ -75,30 +80,21 @@ export function HeldBillsDrawer({
       );
     }
   }
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="right">
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border p-5 pr-12 [&_h2]:text-lg [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-            <div>
-              <SheetTitle>
-                Held Bills <span>{bills.length}</span>
-              </SheetTitle>
-              <SheetDescription>
-                Orders saved for later at the counter.
-              </SheetDescription>
-            </div>
-            <SheetClose asChild>
-              <Button
-                variant="outline"
-                className="size-11 p-0"
-                aria-label="Close held bills"
-              >
-                <X size={19} />
-              </Button>
-            </SheetClose>
-          </div>
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+          <SheetHeader>
+            <SheetTitle className="text-lg font-bold">
+              Held Bills <span className="tabular-nums">{bills.length}</span>
+            </SheetTitle>
+            <SheetDescription className="text-sm text-muted-foreground">
+              Orders saved for later at the counter.
+            </SheetDescription>
+          </SheetHeader>
+
+          <SheetBody className="space-y-3">
             {loading ? (
               <p className="flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
                 Loading held bills...
@@ -107,14 +103,10 @@ export function HeldBillsDrawer({
               <QueryError onRetry={onRetry} />
             ) : bills.length === 0 ? (
               <div className="flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
-                <Clock3 size={24} />
-                <strong>No held bills</strong>
+                <Clock3 size={24} aria-hidden="true" />
+                <strong className="text-foreground">No held bills</strong>
                 <p>Saved orders will appear here.</p>
-                <Button
-                  variant="outline"
-                  className="min-h-11"
-                  onClick={onRetry}
-                >
+                <Button variant="outline" onClick={onRetry}>
                   Refresh held bills
                 </Button>
               </div>
@@ -128,10 +120,12 @@ export function HeldBillsDrawer({
                 )
                 .map((b) => (
                   <article key={b.id}>
-                    <Card className="rounded-xl border border-border bg-card p-4">
+                    <Card className="p-4">
                       <div className="flex justify-between gap-3 [&_h3]:font-semibold [&_p]:mt-1 [&_p]:text-xs [&_p]:text-muted-foreground">
-                        <div>
-                          <h3>{b.hold_label || `Held Order #${b.id}`}</h3>
+                        <div className="min-w-0">
+                          <h3 className="truncate">
+                            {b.hold_label || `Held Order #${b.id}`}
+                          </h3>
                           <p>
                             {new Intl.DateTimeFormat("en-IN", {
                               timeZone: "Asia/Kolkata",
@@ -141,13 +135,15 @@ export function HeldBillsDrawer({
                             IST
                           </p>
                         </div>
-                        <strong>{formatINR(b.total_amount)}</strong>
+                        <strong className="shrink-0 tabular-nums text-primary dark:text-[#ebc96f]">
+                          {formatINR(b.total_amount)}
+                        </strong>
                       </div>
                       <div className="space-y-1 py-3 text-sm text-muted-foreground">
                         <span>
                           {b.item_count} {b.item_count === 1 ? "item" : "items"}
                         </span>
-                        <p>
+                        <p className="break-words">
                           {b.items
                             .map(
                               (i) =>
@@ -155,13 +151,12 @@ export function HeldBillsDrawer({
                             )
                             .join(", ")}
                         </p>
-                        {b.note && <p>Note: {b.note}</p>}
+                        {b.note && <p className="break-words">Note: {b.note}</p>}
                       </div>
                       {canEdit && (
                         <div className="grid grid-cols-2 gap-2">
                           <Button
                             variant="outline"
-                            className="min-h-11"
                             onClick={() => {
                               setMessage("");
                               setReason("");
@@ -170,11 +165,7 @@ export function HeldBillsDrawer({
                           >
                             Cancel Hold
                           </Button>
-                          <Button
-                            variant="outline"
-                            className="min-h-11 bg-primary text-white"
-                            onClick={() => resume(b)}
-                          >
+                          <Button variant="default" onClick={() => resume(b)}>
                             Resume
                           </Button>
                         </div>
@@ -183,9 +174,10 @@ export function HeldBillsDrawer({
                   </article>
                 ))
             )}
-          </div>
+          </SheetBody>
         </SheetContent>
       </Sheet>
+
       <ConfirmDialog
         open={!!replace}
         onOpenChange={(v) => {
@@ -201,6 +193,7 @@ export function HeldBillsDrawer({
           onOpenChange(false);
         }}
       />
+
       <ConfirmDialog
         open={!!cancel}
         onOpenChange={(v) => {
@@ -214,22 +207,16 @@ export function HeldBillsDrawer({
         destructive
         onConfirm={() => void cancelBill()}
       >
-        <div className="mt-4">
-          <FormField htmlFor="cancel-reason" label="Cancellation reason">
-            <Textarea
-              id="cancel-reason"
-              maxLength={255}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Enter a reason"
-            />
-          </FormField>
-          {message && (
-            <p className="text-sm text-destructive" role="alert">
-              {message}
-            </p>
-          )}
-        </div>
+        <FormField htmlFor="cancel-reason" label="Cancellation reason" error={message}>
+          <Textarea
+            id="cancel-reason"
+            maxLength={255}
+            value={reason}
+            error={Boolean(message)}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Enter a reason"
+          />
+        </FormField>
       </ConfirmDialog>
     </>
   );

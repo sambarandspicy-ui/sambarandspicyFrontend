@@ -57,11 +57,11 @@ export function UserMenu() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="h-12 gap-2 px-1 text-left sm:px-2"
+            className="h-10 min-h-9 gap-2 px-1 text-left sm:h-11 sm:px-2"
             aria-label="Account menu"
           >
             <div className="relative shrink-0">
-              <span className="grid size-9 place-items-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              <span className="grid size-8 place-items-center rounded-full border border-primary/20 bg-primary/15 text-xs font-bold text-primary sm:size-9 dark:border-[#ebc96f]/30 dark:bg-primary/25 dark:text-[#ebc96f]">
                 {user?.full_name
                   .split(" ")
                   .filter(Boolean)
@@ -79,16 +79,18 @@ export function UserMenu() {
               />
             </div>
             <span className="hidden sm:block">
-              <strong>{user?.username}</strong>
+              <strong className="block max-w-28 truncate text-sm leading-tight">
+                {user?.username}
+              </strong>
               <small className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
                 <span>{user?.role.replace("_", " ")}</span>
                 <span className="text-[10px] opacity-70">•</span>
-                <span className={online ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-destructive font-medium"}>
+                <span className={online ? "font-medium text-emerald-700 dark:text-emerald-400" : "font-medium text-destructive"}>
                   {online ? "Online" : "Offline"}
                 </span>
               </small>
             </span>
-            <ChevronDown size={16} />
+            <ChevronDown size={15} className="hidden sm:inline-block" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
 

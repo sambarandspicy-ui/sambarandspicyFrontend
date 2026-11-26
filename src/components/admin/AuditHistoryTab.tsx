@@ -13,13 +13,18 @@ import {
 } from "@/components/ui/table";
 
 import { useState } from "react";
+import { Search } from "lucide-react";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import type { AuditLog, User } from "@/types/domain";
 import { getBusinessDateIST } from "@/lib/format";
 import { dateTime } from "@/components/inventory/shared";
@@ -82,6 +87,9 @@ export function AuditHistoryTab({
           Search
           <Input
             placeholder="Action, entity ID, or actor"
+            leadingIcon={<Search size={16} />}
+            clearable
+            onClear={() => setSearch("")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -95,7 +103,29 @@ export function AuditHistoryTab({
           />
         </label>
       </div>
-      <div className="w-full overflow-x-auto">
+      <div className="space-y-3 p-4 md:hidden">
+        {rows.map((x) => {
+          const actor = users.find((u) => u.id === x.actor_user_id);
+          return (
+            <article key={x.id} className="rounded-xl border border-border bg-card p-3.5 shadow-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <Badge variant="outline" className="text-[11px]">{x.entity_type.toUpperCase()} #{x.entity_id ?? "-"}</Badge>
+                  <p className="mt-1.5 font-semibold text-sm">{x.action}</p>
+                </div>
+                <Button variant="outline" size="sm" className="min-h-10 shrink-0" onClick={() => setInspect(x)}>
+                  Inspect
+                </Button>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+                <span>{actor?.full_name ?? "System"} ({actor?.role ?? "SYSTEM"})</span>
+                <span className="tabular-nums">{dateTime(x.created_at)}</span>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      <div className="hidden w-full overflow-x-auto md:block">
         <Table className="w-full text-left text-sm tabular-nums">
           <TableHeader>
             <TableRow>
@@ -146,12 +176,14 @@ export function AuditHistoryTab({
           if (!v) setInspect(null);
         }}
       >
-        <DialogContent className="max-w-3xl">
-          <DialogTitle>Audit entry</DialogTitle>
-          <DialogDescription>
-            Values are redacted before display.
-          </DialogDescription>
-          <div className="grid gap-3 overflow-auto sm:grid-cols-2 [&_pre]:max-h-72 [&_pre]:overflow-auto [&_pre]:rounded-xl [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:text-xs">
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Audit entry</DialogTitle>
+            <DialogDescription>
+              Values are redacted before display.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody className="grid gap-3 sm:grid-cols-2 [&_pre]:max-h-72 [&_pre]:overflow-auto [&_pre]:rounded-xl [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:text-xs">
             <div>
               <strong>Previous values</strong>
               <pre>
@@ -172,14 +204,14 @@ export function AuditHistoryTab({
                 )}
               </pre>
             </div>
-          </div>
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+          </DialogBody>
+          <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline" className="min-h-11">
+              <Button variant="outline" className="min-h-11 sm:min-h-10">
                 Close
               </Button>
             </DialogClose>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>

@@ -14,24 +14,28 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
+    <div className="mb-6 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="min-w-0">
         {eyebrow && (
-          <p className="mb-2 text-xs font-bold tracking-widest text-muted-foreground">
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-widest text-accent-foreground">
             {eyebrow}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="min-w-0 break-words text-xl font-bold tracking-tight text-foreground sm:text-2xl">
             {title}
           </h1>
           {badge}
         </div>
         {description && (
-          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">{description}</p>
         )}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

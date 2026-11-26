@@ -117,9 +117,9 @@ export function ReportsWorkspace() {
         description="Review sales, costs and operating performance."
       />
       {message && <Toast message={message} onDismiss={() => setMessage("")} />}
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 sm:p-4">
         <div
-          className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-muted p-1"
+          className="pos-scroll no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
           role="group"
           aria-label="Report period"
         >
@@ -127,7 +127,8 @@ export function ReportsWorkspace() {
             <Button
               key={p.id}
               variant={period === p.id ? "default" : "ghost"}
-              size="lg"
+              size="default"
+              className="shrink-0 whitespace-nowrap"
               aria-pressed={period === p.id}
               onClick={() => setPeriod(p.id)}
             >
@@ -135,67 +136,77 @@ export function ReportsWorkspace() {
             </Button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {period !== "LIFETIME" && (
-            <>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Previous period"
-                onClick={() => shift(-1)}
-              >
-                <ChevronLeft size={18} />
-              </Button>
-              <label className="sr-only" htmlFor="report-anchor">
-                Anchor date
-              </label>
-              <Input
-                className="w-auto"
-                id="report-anchor"
-                type="date"
-                value={anchor}
-                onChange={(e) => {
-                  if (e.target.value) setAnchor(e.target.value);
-                }}
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Next period"
-                onClick={() => shift(1)}
-              >
-                <ChevronRight size={18} />
-              </Button>
-            </>
-          )}
-          {period !== "LIFETIME" && (
-            <Badge variant="secondary">{rangeLabel(range)}</Badge>
-          )}
-        </div>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button
-            variant="success"
-            size="lg"
-            disabled={!data || loading || !!exporting}
-            onClick={() => void runExport("xlsx")}
-          >
-            <Download size={16} />
-            {exporting === "xlsx" ? "Generating..." : "Export Excel"}
-          </Button>
-          <Button
-            variant="warning"
-            size="lg"
-            disabled={!data || loading || !!exporting}
-            onClick={() => void runExport("pdf")}
-          >
-            <FileText size={16} />
-            {exporting === "pdf" ? "Generating..." : "Export PDF"}
-          </Button>
-          {user.role === "ADMIN" && (
-            <Button size="lg" onClick={() => setExpenseOpen(true)}>
-              <Plus size={16} /> Add expense
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {period !== "LIFETIME" && (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-10 shrink-0"
+                  aria-label="Previous period"
+                  onClick={() => shift(-1)}
+                >
+                  <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
+                </Button>
+                <label className="sr-only" htmlFor="report-anchor">
+                  Anchor date
+                </label>
+                <Input
+                  className="w-auto min-w-36"
+                  id="report-anchor"
+                  type="date"
+                  value={anchor}
+                  onChange={(e) => {
+                    if (e.target.value) setAnchor(e.target.value);
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-10 shrink-0"
+                  aria-label="Next period"
+                  onClick={() => shift(1)}
+                >
+                  <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+                </Button>
+              </>
+            )}
+            {period !== "LIFETIME" && (
+              <Badge variant="secondary">{rangeLabel(range)}</Badge>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="success"
+              size="default"
+              loading={exporting === "xlsx"}
+              disabled={!data || loading || !!exporting}
+              leftIcon={<Download size={16} aria-hidden="true" />}
+              onClick={() => void runExport("xlsx")}
+            >
+              {exporting === "xlsx" ? "Generating..." : "Export Excel"}
             </Button>
-          )}
+            <Button
+              variant="warning"
+              size="default"
+              loading={exporting === "pdf"}
+              disabled={!data || loading || !!exporting}
+              leftIcon={<FileText size={16} aria-hidden="true" />}
+              onClick={() => void runExport("pdf")}
+            >
+              {exporting === "pdf" ? "Generating..." : "Export PDF"}
+            </Button>
+            {user.role === "ADMIN" && (
+              <Button
+                size="default"
+                leftIcon={<Plus size={16} aria-hidden="true" />}
+                onClick={() => setExpenseOpen(true)}
+              >
+                Add expense
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       {loading ? (
@@ -223,7 +234,7 @@ export function ReportsWorkspace() {
             <StockEfficiencyCard summary={data.summary} />
           </div>
           <nav
-            className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
+            className="pos-scroll no-scrollbar flex max-w-full flex-nowrap gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
             aria-label="Report sections"
             role="group"
           >
@@ -231,7 +242,8 @@ export function ReportsWorkspace() {
               <Button
                 key={t.id}
                 variant={tab === t.id ? "default" : "ghost"}
-                size="lg"
+                size="default"
+                className="shrink-0 whitespace-nowrap"
                 aria-current={tab === t.id ? "page" : undefined}
                 aria-pressed={tab === t.id}
                 onClick={() => setTab(t.id)}

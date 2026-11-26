@@ -2,19 +2,22 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { FormField } from "@/components/shared/form-field";
 
 import { useState } from "react";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogTitle,
   DialogDescription,
-  DialogClose,
+  DialogFooter,
+  DialogHeader,
 } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ImageIcon, Layers, X } from "lucide-react";
+import { ImageIcon, Layers } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import type { Category } from "@/types/domain";
 import type { CategoryInput } from "@/services/api/types";
@@ -84,34 +87,23 @@ export function CategoryFormDialog({
         if (!v && !pending) onClose();
       }}
     >
-      <DialogContent showClose={false} className="max-w-2xl overflow-hidden">
-        <div className="flex items-start justify-between gap-2 [&_h2]:text-lg [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-          <div>
-            <span className="text-xs font-semibold tracking-widest text-primary">
-              MENU MANAGEMENT
-            </span>
-            <DialogTitle>
-              {category ? "Edit category" : "Add category"}
-            </DialogTitle>
-            <DialogDescription>
-              Manage the category and its single cover image.
-            </DialogDescription>
-          </div>
-          <DialogClose asChild>
-            <Button
-              variant="ghost"
-              className="size-11 p-0"
-              aria-label="Close category dialog"
-            >
-              <X size={18} />
-            </Button>
-          </DialogClose>
-        </div>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <span className="text-xs font-semibold tracking-widest text-primary">
+            MENU MANAGEMENT
+          </span>
+          <DialogTitle>
+            {category ? "Edit category" : "Add category"}
+          </DialogTitle>
+          <DialogDescription>
+            Manage the category and its single cover image.
+          </DialogDescription>
+        </DialogHeader>
         <form
-          className="flex min-h-0 flex-1 flex-col gap-4 pt-4 [&_label]:block [&_label]:text-sm [&_label]:font-semibold [&_label_input:not([type=checkbox])]:mt-2 [&_label_select]:mt-2 [&_label_textarea]:mt-2"
+          className="flex min-h-0 w-full flex-1 flex-col overflow-hidden"
           onSubmit={(e) => void handleSubmit(save)(e)}
         >
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+          <DialogBody className="space-y-4">
             <Card className="space-y-4 bg-muted/30 p-4 sm:p-5">
               <div className="[&_h3]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
                 <h3 className="flex items-center gap-2">
@@ -125,38 +117,27 @@ export function CategoryFormDialog({
                 <p>Organize dishes for your counter menu.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label>
-                    Name
-                    <Input
-                      maxLength={120}
-                      placeholder="e.g. Dosa"
-                      {...register("name")}
-                    />
-                  </label>
-                  {errors.name && (
-                    <p className="text-sm text-destructive" role="alert">
-                      {errors.name.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label>
-                    Sort order
-                    <Input
-                      type="number"
-                      step="1"
-                      {...register("sort_order", { valueAsNumber: true })}
-                    />
-                  </label>
-                  {errors.sort_order && (
-                    <p className="text-sm text-destructive">
-                      {errors.sort_order.message}
-                    </p>
-                  )}
-                </div>
+                <FormField label="Name" htmlFor="category-name" error={errors.name?.message} required>
+                  <Input
+                    id="category-name"
+                    maxLength={120}
+                    placeholder="e.g. Dosa"
+                    error={!!errors.name}
+                    {...register("name")}
+                  />
+                </FormField>
+                <FormField label="Sort order" htmlFor="category-sort-order" error={errors.sort_order?.message}>
+                  <Input
+                    id="category-sort-order"
+                    type="number"
+                    inputMode="numeric"
+                    step="1"
+                    error={!!errors.sort_order}
+                    {...register("sort_order", { valueAsNumber: true })}
+                  />
+                </FormField>
               </div>
-              <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-muted p-3 text-sm [&_input]:size-4 [&_input]:accent-blue-600">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-muted p-3 text-sm font-semibold [&_input]:size-4 [&_input]:accent-primary">
                 <input type="checkbox" {...register("is_active")} /> Active
                 category
               </label>
@@ -181,17 +162,17 @@ export function CategoryFormDialog({
                 onProcessingChange={setImageProcessing}
               />
             </Card>
-          </div>
-          {error && (
-            <Alert variant="destructive" role="alert" className="shrink-0 py-3">
-              {error}
-            </Alert>
-          )}
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+            {error && (
+              <Alert variant="destructive" role="alert" className="py-3">
+                {error}
+              </Alert>
+            )}
+          </DialogBody>
+          <DialogFooter>
             <Button
               variant="outline"
               type="button"
-              className="min-h-11"
+              className="min-h-11 sm:min-h-10"
               disabled={pending}
               onClick={onClose}
             >
@@ -200,12 +181,13 @@ export function CategoryFormDialog({
             <Button
               variant="default"
               type="submit"
-              className="min-h-11"
-              disabled={pending || imageProcessing}
+              className="min-h-11 sm:min-h-10"
+              loading={pending}
+              disabled={imageProcessing}
             >
               {pending ? "Saving..." : "Save category"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

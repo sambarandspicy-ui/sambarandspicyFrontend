@@ -98,7 +98,7 @@ export function InventoryWorkspace() {
       {notice && <Toast message={notice} onDismiss={() => setNotice("")} />}
       <div className="flex flex-wrap items-start gap-3">
         <nav
-          className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
+          className="pos-scroll no-scrollbar flex max-w-full flex-nowrap gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
           aria-label="Inventory sections"
           role="group"
         >
@@ -106,7 +106,8 @@ export function InventoryWorkspace() {
             <Button
               key={t.id}
               variant={tab === t.id ? "default" : "ghost"}
-              size="lg"
+              size="default"
+              className="shrink-0 whitespace-nowrap"
               aria-current={tab === t.id ? "page" : undefined}
               aria-pressed={tab === t.id}
               onClick={() => setTab(t.id)}

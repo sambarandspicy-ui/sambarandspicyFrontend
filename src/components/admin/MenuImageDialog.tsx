@@ -4,8 +4,11 @@ import { ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { MenuItem } from "@/types/domain";
@@ -49,11 +52,11 @@ export function MenuImageDialog({
       }}
     >
       <DialogContent className="max-w-lg">
-        <div className="flex items-start gap-3 pr-10">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-blue-500/10 text-primary">
+        <DialogHeader className="flex-row items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
             <ImagePlus size={21} aria-hidden="true" />
           </span>
-          <div>
+          <div className="min-w-0">
             <DialogTitle className="text-lg font-bold">
               {kind === "category" ? "Category photo" : "Dish photo"}
             </DialogTitle>
@@ -61,8 +64,8 @@ export function MenuImageDialog({
               Choose and frame an image for {item.name}.
             </DialogDescription>
           </div>
-        </div>
-        <div className="mt-5 min-h-0 overflow-y-auto pr-1">
+        </DialogHeader>
+        <DialogBody>
           <ImagePicker
             label={kind === "category" ? "Category image" : "Dish image"}
             value={image}
@@ -75,18 +78,19 @@ export function MenuImageDialog({
               {error}
             </p>
           )}
-        </div>
-        <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">
+        </DialogBody>
+        <DialogFooter>
           <Button variant="outline" disabled={saving} onClick={onClose}>
             Cancel
           </Button>
           <Button
-            disabled={saving || processing || (!file && !removed)}
+            loading={saving}
+            disabled={processing || (!file && !removed)}
             onClick={() => void save()}
           >
             {saving ? "Saving..." : "Save photo"}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -6,8 +6,11 @@ import { Download, Check, Laptop, FileDown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 
@@ -194,8 +197,8 @@ export function InstallAppButton() {
       </Button>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md overflow-hidden p-0">
-          <div className="flex items-center gap-3 border-b border-border bg-muted/40 p-5">
+        <DialogContent className="max-w-md">
+          <DialogHeader className="flex-row items-center gap-3 bg-muted/40">
             <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-border bg-white shadow-xs">
               <Image
                 src="/images/icon-192.png"
@@ -206,7 +209,7 @@ export function InstallAppButton() {
                 priority
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <DialogTitle className="text-base font-bold">
                 {downloaded ? "Desktop App Downloaded" : "Install Sambar & Spicy"}
               </DialogTitle>
@@ -214,9 +217,9 @@ export function InstallAppButton() {
                 Desktop, laptop and mobile app installation
               </DialogDescription>
             </div>
-          </div>
+          </DialogHeader>
 
-          <div className="space-y-4 p-5 text-sm">
+          <DialogBody className="space-y-4 text-sm">
             {downloaded && (
               <div className="flex items-start gap-2.5 rounded-xl border border-success/30 bg-success/10 p-3.5 text-xs text-success">
                 <Check size={17} className="mt-0.5 shrink-0 stroke-[2.5]" />
@@ -302,9 +305,9 @@ export function InstallAppButton() {
                 </div>
               </div>
             </div>
-          </div>
+          </DialogBody>
 
-          <div className="flex items-center justify-end gap-2 border-t border-border bg-card p-4">
+          <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
               Close
             </Button>
@@ -313,7 +316,7 @@ export function InstallAppButton() {
                 <Download size={14} /> Install via Browser
               </Button>
             )}
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

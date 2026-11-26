@@ -21,9 +21,9 @@ export function UserAccessTab({
   };
   return (
     <>
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+      <div className="rounded-xl border border-primary/25 bg-primary/10 p-4 text-sm text-foreground dark:border-[#ebc96f]/30 dark:bg-primary/20">
         <strong>Fixed three-account license</strong>
-        <p>
+        <p className="mt-1 text-muted-foreground">
           Exactly one account per role. No open signup or fourth user slot; the
           database enforces these fixed slots.
         </p>

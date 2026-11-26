@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -42,8 +43,8 @@ export function ConfirmDialog({
             {description}
           </DialogDescription>
         </DialogHeader>
-        {children}
-        <DialogFooter className="mt-5">
+        {Boolean(children) && <DialogBody>{children}</DialogBody>}
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

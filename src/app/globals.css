@@ -17,43 +17,78 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-primary: var(--primary);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-destructive: var(--destructive);
 }
 
+/* Sambar & Spicy Customer Menu unified light & dark palette */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f7f5eb;
+  --foreground: #183223;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #475569;
-  --border: #e2e8f0;
-  --input: #cbd5e1;
-  --ring: #2563eb;
-  --primary: #2563eb;
-  --success: #16a34a;
-  --warning: #ea580c;
+  --card-foreground: #183223;
+  --popover: #ffffff;
+  --popover-foreground: #183223;
+  --primary: #17552f;
+  --primary-foreground: #ffffff;
+  --secondary: #edf1e6;
+  --secondary-foreground: #183223;
+  --muted: #edf1e6;
+  --muted-foreground: #4a6050;
+  --accent: #f3ecda;
+  --accent-foreground: #8a681f;
+  --border: #dce4d3;
+  --input: #cad6bf;
+  --ring: #b58a27;
+  --success: #15803d;
+  --warning: #b45309;
   --destructive: #dc2626;
+  --brand-deep: #092b16;
+  --brand-hero: #103b20;
+  --brand-gold: #ebc96f;
 }
 
 html.dark {
-  --background: #0b1120;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --muted: #0f172a;
-  --muted-foreground: #94a3b8;
-  --border: #334155;
-  --input: #475569;
-  --ring: #60a5fa;
+  --background: #071d10;
+  --foreground: #f7f5eb;
+  --card: #0d2d19;
+  --card-foreground: #f7f5eb;
+  --popover: #0d2d19;
+  --popover-foreground: #f7f5eb;
+  --primary: #227643;
+  --primary-foreground: #ffffff;
+  --secondary: #143d23;
+  --secondary-foreground: #f7f5eb;
+  --muted: #12361f;
+  --muted-foreground: #b8c7b6;
+  --accent: #1b492b;
+  --accent-foreground: #ebc96f;
+  --border: #214b30;
+  --input: #2c5d3e;
+  --ring: #ebc96f;
+  --success: #16a34a;
+  --warning: #d97706;
+  --destructive: #dc2626;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -136,6 +171,34 @@ html.is-scrolling,
 html.is-scrolling::-webkit-scrollbar-thumb,
 *.is-scrolling::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--primary) 35%, var(--input));
+}
+.pos-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button,
+input.no-spinner::-webkit-inner-spin-button,
+input.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"],
+input.no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 .mouse-drag-scroll[data-mouse-dragging="true"] {
   cursor: grabbing;

@@ -3,19 +3,22 @@ import { Card } from "@/components/ui/card";
 
 import { useState } from "react";
 import { Input, Textarea } from "@/components/ui/input";
+import { FormField } from "@/components/shared/form-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogTitle,
   DialogDescription,
-  DialogClose,
+  DialogFooter,
+  DialogHeader,
 } from "@/components/ui/dialog";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Image as ImageIcon, Tag, UtensilsCrossed, X } from "lucide-react";
+import { Image as ImageIcon, Tag, UtensilsCrossed } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import type { Category, MenuItem } from "@/types/domain";
 import type { MenuItemInput } from "@/services/api/types";
@@ -193,42 +196,31 @@ export function MenuItemFormDialog({
         if (!v && !pending) onClose();
       }}
     >
-      <DialogContent showClose={false} className="max-w-2xl overflow-hidden">
-        <div className="flex items-start justify-between gap-2 [&_h2]:text-lg [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-          <div>
-            <span className="text-xs font-semibold tracking-widest text-primary">
-              MENU MANAGEMENT
-            </span>
-            <DialogTitle>
-              {item ? "Edit menu item" : "Add menu item"}
-            </DialogTitle>
-            <DialogDescription>
-              Set up the details your counter staff will see.
-            </DialogDescription>
-          </div>
-          <DialogClose asChild>
-            <Button
-              variant="ghost"
-              className="size-11 p-0"
-              aria-label="Close menu dialog"
-            >
-              <X size={18} />
-            </Button>
-          </DialogClose>
-        </div>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <span className="text-xs font-semibold tracking-widest text-primary">
+            MENU MANAGEMENT
+          </span>
+          <DialogTitle>
+            {item ? "Edit menu item" : "Add menu item"}
+          </DialogTitle>
+          <DialogDescription>
+            Set up the details your counter staff will see.
+          </DialogDescription>
+        </DialogHeader>
         <form
-          className="mt-4 flex min-h-0 flex-1 flex-col gap-4"
+          className="flex min-h-0 w-full flex-1 flex-col overflow-hidden"
           onSubmit={(e) => void handleSubmit(save)(e)}
         >
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+          <DialogBody className="space-y-4">
             <Card className="space-y-4 bg-muted/30 p-4 sm:p-5">
               <div className="[&_h3]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
                 <h3 className="flex items-center gap-2"><UtensilsCrossed size={17} className="text-primary" aria-hidden="true" /> Dish details</h3>
                 <p>Tell your team what is on the menu.</p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 [&_label]:block [&_label]:text-sm [&_label]:font-semibold [&_input]:mt-2 [&_select]:mt-2 [&_textarea]:mt-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="menu-category">Category</label>
+                  <label htmlFor="menu-category" className="block text-sm font-semibold">Category</label>
                   <Controller control={control} name="category_id" render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger id="menu-category" ref={field.ref} onBlur={field.onBlur} aria-invalid={!!errors.category_id} aria-describedby={errors.category_id ? "menu-category-error" : undefined} className="mt-2 min-h-11 text-base sm:text-sm">
@@ -242,7 +234,7 @@ export function MenuItemFormDialog({
                   {errors.category_id && <p id="menu-category-error" role="alert" className="mt-1 text-sm text-destructive">{errors.category_id.message}</p>}
                 </div>
                 <div>
-                  <label htmlFor="menu-dietary-type">Dietary type</label>
+                  <label htmlFor="menu-dietary-type" className="block text-sm font-semibold">Dietary type</label>
                   <Controller control={control} name="dietary_type" render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger id="menu-dietary-type" ref={field.ref} onBlur={field.onBlur} className="mt-2 min-h-11 text-base sm:text-sm"><SelectValue /></SelectTrigger>
@@ -255,129 +247,116 @@ export function MenuItemFormDialog({
                     </Select>
                   )} />
                 </div>
-                <label>
-                  Dish name
+                <FormField label="Dish name" htmlFor="menu-dish-name" error={errors.name?.message} required>
                   <Input
+                    id="menu-dish-name"
                     maxLength={150}
                     placeholder="e.g. Masala dosa"
+                    error={!!errors.name}
                     {...register("name")}
                   />
-                </label>
-                {errors.name && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {errors.name.message}
-                  </p>
-                )}
-                <label>
-                  SKU <span>Optional</span>
+                </FormField>
+                <FormField label="SKU (Optional)" htmlFor="menu-dish-sku" error={errors.sku?.message}>
                   <Input
+                    id="menu-dish-sku"
                     maxLength={50}
                     placeholder="e.g. DOSA-01"
+                    error={!!errors.sku}
                     {...register("sku")}
                   />
-                </label>
-                {errors.sku && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {errors.sku.message}
-                  </p>
-                )}
-                <label className="sm:col-span-2">
-                  Description <span>Optional</span>
-                  <Textarea
-                    maxLength={300}
-                    placeholder="Add a short description of this dish"
-                    {...register("description")}
-                  />
-                </label>
+                </FormField>
+                <div className="sm:col-span-2">
+                  <FormField label="Description (Optional)" htmlFor="menu-dish-desc">
+                    <Textarea
+                      id="menu-dish-desc"
+                      maxLength={300}
+                      placeholder="Add a short description of this dish"
+                      {...register("description")}
+                    />
+                  </FormField>
+                </div>
               </div>
             </Card>
-            <Card className="space-y-4 bg-muted/30 p-4 sm:p-5 [&_label]:text-sm [&_label]:font-semibold [&_label_input:not([type=checkbox])]:mt-2">
+            <Card className="space-y-4 bg-muted/30 p-4 sm:p-5">
               <div className="[&_h3]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
                 <h3 className="flex items-center gap-2"><Tag size={17} className="text-primary" aria-hidden="true" /> Pricing &amp; portions</h3>
                 <p>Set the selling price and optional estimated cost.</p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label>
-                  Selling price (INR)
+                <FormField label="Selling price (INR)" htmlFor="menu-selling-price" error={errors.selling_price ? "Enter a valid non-negative price." : undefined} required>
                   <Input
+                    id="menu-selling-price"
                     type="number"
+                    inputMode="decimal"
                     min="0"
                     step="0.01"
+                    prefixText="₹"
+                    error={!!errors.selling_price}
                     {...register("selling_price", { valueAsNumber: true })}
                   />
-                </label>
-                <label>
-                  Est. unit cost (INR)
+                </FormField>
+                <FormField label="Est. unit cost (INR)" htmlFor="menu-unit-cost" error={errors.estimated_unit_cost?.message}>
                   <Input
+                    id="menu-unit-cost"
                     type="number"
+                    inputMode="decimal"
                     min="0"
                     step="0.01"
+                    prefixText="₹"
+                    error={!!errors.estimated_unit_cost}
                     {...register("estimated_unit_cost")}
                   />
-                </label>
+                </FormField>
               </div>
-              {(errors.selling_price || errors.estimated_unit_cost) && (
-                <p className="text-sm text-destructive">
-                  {errors.estimated_unit_cost?.message ??
-                    "Enter a valid non-negative price."}
-                </p>
-              )}
-              <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-muted p-3 text-sm [&_input]:size-4 [&_input]:accent-blue-600">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-muted p-3 text-sm font-semibold [&_input]:size-4 [&_input]:accent-primary">
                 <Input type="checkbox" {...register("has_half_portion")} />{" "}
                 Enable half plate portion
               </label>
               {hasHalf && (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label>
-                    Half plate price (INR)
+                  <FormField label="Half plate price (INR)" htmlFor="menu-half-price" error={errors.half_selling_price?.message} required>
                     <Input
+                      id="menu-half-price"
                       type="number"
+                      inputMode="decimal"
                       min="0"
                       step="0.01"
+                      prefixText="₹"
+                      error={!!errors.half_selling_price}
                       {...register("half_selling_price")}
                     />
-                  </label>
-                  <label>
-                    Half plate est. cost (INR)
+                  </FormField>
+                  <FormField label="Half plate est. cost (INR)" htmlFor="menu-half-cost" error={errors.half_estimated_unit_cost?.message}>
                     <Input
+                      id="menu-half-cost"
                       type="number"
+                      inputMode="decimal"
                       min="0"
                       step="0.01"
+                      prefixText="₹"
+                      error={!!errors.half_estimated_unit_cost}
                       {...register("half_estimated_unit_cost")}
                     />
-                  </label>
+                  </FormField>
                 </div>
               )}
-              {errors.half_selling_price && (
-                <p className="text-sm text-destructive" role="alert">
-                  {errors.half_selling_price.message}
-                </p>
-              )}
-              {errors.half_estimated_unit_cost && (
-                <p className="text-sm text-destructive" role="alert">
-                  {errors.half_estimated_unit_cost.message}
-                </p>
-              )}
             </Card>
-            <Card className="space-y-4 bg-muted/30 p-4 sm:p-5 [&_label]:text-sm [&_label]:font-semibold [&_label_input:not([type=checkbox])]:mt-2">
+            <Card className="space-y-4 bg-muted/30 p-4 sm:p-5">
               <div className="[&_h3]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
                 <h3 className="flex items-center gap-2"><ImageIcon size={17} className="text-primary" aria-hidden="true" /> Image &amp; availability</h3>
                 <p>Choose how this dish appears at the counter.</p>
               </div>
-              <label>
-                Sort order
+              <FormField label="Sort order" htmlFor="menu-sort-order" error={errors.sort_order ? "Enter an integer sort order." : undefined}>
                 <Input
+                  id="menu-sort-order"
                   type="number"
+                  inputMode="numeric"
                   step="1"
+                  error={!!errors.sort_order}
                   {...register("sort_order", { valueAsNumber: true })}
                 />
-              </label>
-              {errors.sort_order && (
-                <p className="text-sm text-destructive">
-                  Enter an integer sort order.
-                </p>
-              )}
-              <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-muted p-3 text-sm [&_input]:size-4 [&_input]:accent-blue-600">
+              </FormField>
+              <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-muted p-3 text-sm font-semibold [&_input]:size-4 [&_input]:accent-primary">
                 <Input type="checkbox" {...register("is_available")} />{" "}
                 Available in billing menu
               </label>
@@ -389,25 +368,26 @@ export function MenuItemFormDialog({
                 onProcessingChange={setImageProcessing}
               />
             </Card>
-          </div>
-          {error && (
-            <Alert variant="destructive" role="alert" className="shrink-0 py-3">
-              {error}
-            </Alert>
-          )}
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+            {error && (
+              <Alert variant="destructive" role="alert" className="py-3">
+                {error}
+              </Alert>
+            )}
+          </DialogBody>
+          <DialogFooter>
             <Button
               variant="outline"
               type="button"
+              className="min-h-11 sm:min-h-10"
               disabled={pending}
               onClick={onClose}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || imageProcessing}>
+            <Button type="submit" className="min-h-11 sm:min-h-10" loading={pending} disabled={imageProcessing}>
               {pending ? "Saving..." : "Save dish"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

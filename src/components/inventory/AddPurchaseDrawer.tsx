@@ -1,24 +1,27 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/select";
-
 import { useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-  SheetClose,
-} from "@/components/ui/sheet";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { X, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/select";
+import { FormField } from "@/components/shared/form-field";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import type { InventoryItem } from "@/types/domain";
 import type { PurchaseInput } from "@/services/api/types";
 import { formatINR, getBusinessDateIST } from "@/lib/format";
 import { round } from "@/lib/calculations";
+
 const schema = z.object({
   business_date: z.string().min(1, "Select a date"),
   supplier_name: z.string().max(150),
@@ -37,7 +40,9 @@ const schema = z.object({
     )
     .min(1),
 });
+
 type Values = z.infer<typeof schema>;
+
 export function AddPurchaseDrawer({
   items,
   onClose,
@@ -76,6 +81,7 @@ export function AddPurchaseDrawer({
       (n, l) => n + Math.round(lineTotal(l.quantity, l.unit_cost) * 100),
       0,
     ) / 100;
+
   async function save(v: Values) {
     try {
       setError("");
@@ -94,6 +100,7 @@ export function AddPurchaseDrawer({
       setError(e instanceof Error ? e.message : "Could not save purchase.");
     }
   }
+
   return (
     <Sheet
       open
@@ -101,149 +108,179 @@ export function AddPurchaseDrawer({
         if (!v && !pending) onClose();
       }}
     >
-      <SheetContent side="right" className="w-full sm:max-w-xl">
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border p-5 [&_h2]:text-lg [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-          <div>
-            <SheetTitle>Add buying stock</SheetTitle>
-            <SheetDescription>
-              Record a supplier purchase and update stock balances.
-            </SheetDescription>
-          </div>
-          <SheetClose asChild>
-            <Button
-              variant="ghost"
-              className="size-11 p-0"
-              aria-label="Close purchase drawer"
-            >
-              <X size={19} />
-            </Button>
-          </SheetClose>
-        </div>
+      <SheetContent
+        side="right"
+        closeLabel="Close purchase drawer"
+        className="w-full sm:max-w-xl"
+      >
+        <SheetHeader>
+          <SheetTitle className="text-lg font-bold">Add buying stock</SheetTitle>
+          <SheetDescription className="text-sm text-muted-foreground">
+            Record a supplier purchase and update stock balances.
+          </SheetDescription>
+        </SheetHeader>
+
         <form
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex min-h-0 w-full flex-1 flex-col overflow-hidden"
           onSubmit={(e) => void handleSubmit(save)(e)}
         >
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 [&_label]:block [&_label]:text-sm [&_label]:font-semibold [&_input]:mt-2 [&_select]:mt-2">
-            <label>
-              Business date
-              <Input type="date" {...register("business_date")} />
-            </label>
-            {errors.business_date && (
-              <p className="text-sm text-destructive">
-                {errors.business_date.message}
-              </p>
-            )}
-            <label>
-              Supplier name <span>Optional</span>
-              <Input maxLength={150} {...register("supplier_name")} />
-            </label>
-            <label>
-              Purchase reference <span>Optional</span>
-              <Input maxLength={100} {...register("purchase_reference")} />
-            </label>
-            <label>
-              Notes <span>Optional</span>
-              <Input maxLength={255} {...register("notes")} />
-            </label>
-            <div className="flex items-center justify-between gap-3">
-              <strong>Purchase items</strong>
+          <SheetBody className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <FormField
+                label="Business date"
+                htmlFor="purchase-date"
+                error={errors.business_date?.message}
+              >
+                <Input
+                  id="purchase-date"
+                  type="date"
+                  error={Boolean(errors.business_date)}
+                  {...register("business_date")}
+                />
+              </FormField>
+              <FormField label="Supplier name (Optional)" htmlFor="purchase-supplier">
+                <Input
+                  id="purchase-supplier"
+                  maxLength={150}
+                  {...register("supplier_name")}
+                />
+              </FormField>
+              <FormField label="Purchase reference (Optional)" htmlFor="purchase-ref">
+                <Input
+                  id="purchase-ref"
+                  maxLength={100}
+                  {...register("purchase_reference")}
+                />
+              </FormField>
+              <FormField label="Notes (Optional)" htmlFor="purchase-notes">
+                <Input id="purchase-notes" maxLength={255} {...register("notes")} />
+              </FormField>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <strong className="text-sm font-bold">Purchase items</strong>
               <Button
                 variant="outline"
+                size="sm"
                 type="button"
-                className="min-h-11"
+                leftIcon={<Plus size={15} aria-hidden="true" />}
                 onClick={() =>
                   append({ inventory_item_id: "", quantity: 1, unit_cost: 0 })
                 }
               >
-                <Plus size={15} /> Add line
+                Add line
               </Button>
             </div>
-            {fields.map((field, i) => (
-              <div
-                className="space-y-3 rounded-xl border border-border p-3"
-                key={field.id}
-              >
-                <div className="flex items-center justify-between">
-                  <strong>Item {i + 1}</strong>
-                  {fields.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      type="button"
-                      className="size-11 p-0"
-                      aria-label={`Remove line ${i + 1}`}
-                      onClick={() => remove(i)}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  )}
-                </div>
-                <label>
-                  Inventory item
-                  <NativeSelect {...register(`lines.${i}.inventory_item_id`)}>
-                    <option value="">Select an item</option>
-                    {items
-                      .filter((x) => x.is_active)
-                      .map((x) => (
-                        <option key={x.id} value={x.id}>
-                          {x.name} ({x.unit})
-                        </option>
-                      ))}
-                  </NativeSelect>
-                </label>
-                {errors.lines?.[i]?.inventory_item_id && (
-                  <p className="text-sm text-destructive">Select an item.</p>
-                )}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label>
-                    Quantity
-                    <Input
-                      type="number"
-                      min="0.001"
-                      step="0.001"
-                      {...register(`lines.${i}.quantity`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                  </label>
-                  <label>
-                    Unit cost (INR)
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.0001"
-                      {...register(`lines.${i}.unit_cost`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                  </label>
-                </div>
-                {(errors.lines?.[i]?.quantity ||
-                  errors.lines?.[i]?.unit_cost) && (
-                  <p className="text-sm text-destructive">
-                    Enter a positive quantity and non-negative cost.
-                  </p>
-                )}
-                <p className="text-right font-semibold tabular-nums">
-                  Line total{" "}
-                  <strong>
-                    {formatINR(
-                      lineTotal(lines[i]?.quantity, lines[i]?.unit_cost),
+
+            {fields.map((field, i) => {
+              const selectedItem = items.find(
+                (x) => x.id === Number(lines[i]?.inventory_item_id),
+              );
+              return (
+                <div
+                  className="space-y-3 rounded-xl border border-border bg-muted/20 p-3.5"
+                  key={field.id}
+                >
+                  <div className="flex items-center justify-between">
+                    <strong className="text-sm">Item {i + 1}</strong>
+                    {fields.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Remove line ${i + 1}`}
+                        onClick={() => remove(i)}
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                      </Button>
                     )}
-                  </strong>
-                </p>
-              </div>
-            ))}
+                  </div>
+                  <FormField
+                    label="Inventory item"
+                    htmlFor={`purchase-line-${i}-item`}
+                    error={errors.lines?.[i]?.inventory_item_id ? "Select an item." : undefined}
+                  >
+                    <NativeSelect
+                      id={`purchase-line-${i}-item`}
+                      error={Boolean(errors.lines?.[i]?.inventory_item_id)}
+                      {...register(`lines.${i}.inventory_item_id`)}
+                    >
+                      <option value="">Select an item</option>
+                      {items
+                        .filter((x) => x.is_active)
+                        .map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {x.name} ({x.unit})
+                          </option>
+                        ))}
+                    </NativeSelect>
+                  </FormField>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <FormField
+                      label="Quantity"
+                      htmlFor={`purchase-line-${i}-qty`}
+                      error={errors.lines?.[i]?.quantity?.message}
+                    >
+                      <Input
+                        id={`purchase-line-${i}-qty`}
+                        type="number"
+                        inputMode="decimal"
+                        suffixText={selectedItem?.unit}
+                        min="0.001"
+                        step="0.001"
+                        error={Boolean(errors.lines?.[i]?.quantity)}
+                        {...register(`lines.${i}.quantity`, {
+                          valueAsNumber: true,
+                        })}
+                      />
+                    </FormField>
+                    <FormField
+                      label="Unit cost (INR)"
+                      htmlFor={`purchase-line-${i}-cost`}
+                      error={errors.lines?.[i]?.unit_cost?.message}
+                    >
+                      <Input
+                        id={`purchase-line-${i}-cost`}
+                        type="number"
+                        inputMode="decimal"
+                        prefixText="₹"
+                        min="0"
+                        step="0.0001"
+                        error={Boolean(errors.lines?.[i]?.unit_cost)}
+                        {...register(`lines.${i}.unit_cost`, {
+                          valueAsNumber: true,
+                        })}
+                      />
+                    </FormField>
+                  </div>
+
+                  <p className="text-right text-sm font-semibold tabular-nums">
+                    Line total:{" "}
+                    <strong>
+                      {formatINR(
+                        lineTotal(lines[i]?.quantity, lines[i]?.unit_cost),
+                      )}
+                    </strong>
+                  </p>
+                </div>
+              );
+            })}
+
             {error && (
-              <p className="text-sm text-destructive" role="alert">
+              <p className="text-sm font-medium text-destructive" role="alert">
                 {error}
               </p>
             )}
-          </div>
-          <div className="shrink-0 border-t border-border p-5">
-            <div>
-              Purchase total <strong>{formatINR(total)}</strong>
+          </SheetBody>
+
+          <SheetFooter className="space-y-2">
+            <div className="flex items-center justify-between text-base">
+              <span className="font-semibold">Purchase total</span>
+              <strong className="text-lg font-extrabold tabular-nums text-primary dark:text-[#ebc96f]">
+                {formatINR(total)}
+              </strong>
             </div>
-            <p>
+            <p className="text-xs leading-relaxed text-muted-foreground">
               Purchases increase stock asset value and update weighted-average
               unit cost; P&amp;L cost is recognized when stock is used or
               wasted.
@@ -251,12 +288,13 @@ export function AddPurchaseDrawer({
             <Button
               variant="default"
               type="submit"
-              className="min-h-11 w-full"
-              disabled={pending}
+              size="lg"
+              className="w-full"
+              loading={pending}
             >
               {pending ? "Saving..." : "Record purchase"}
             </Button>
-          </div>
+          </SheetFooter>
         </form>
       </SheetContent>
     </Sheet>

@@ -12,6 +12,7 @@ Object.defineProperty(globalThis, "self", { value: dom.window, configurable: tru
 async function main() {
   const { render, screen, cleanup } = await import("@testing-library/react");
   const { QueryClient, QueryClientProvider } = require("@tanstack/react-query") as typeof import("@tanstack/react-query");
+  const { PathnameContext } = require("next/dist/shared/lib/hooks-client-context.shared-runtime") as typeof import("next/dist/shared/lib/hooks-client-context.shared-runtime");
   const { AuthProvider, useAuth } = require("../src/providers/auth-provider") as typeof import("../src/providers/auth-provider");
   const { api } = require("../src/services/api") as typeof import("../src/services/api");
   const original = api.getMe;
@@ -21,6 +22,19 @@ async function main() {
     const { ready, user } = useAuth();
     return <p>{ready && !user ? "Signed out" : "Loading"}</p>;
   }
+  render(
+    <PathnameContext.Provider value="/menu">
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>
+      </QueryClientProvider>
+    </PathnameContext.Provider>,
+  );
+  await screen.findByText("Signed out");
+  assert.equal(calls, 0, "public /menu route must not call /api/v1/auth/me");
+  cleanup();
+
   render(<React.StrictMode><QueryClientProvider client={new QueryClient()}><AuthProvider><Probe /></AuthProvider></QueryClientProvider></React.StrictMode>);
   await screen.findByText("Signed out");
   assert.equal(calls, 1);

@@ -141,7 +141,7 @@ export function MenuItemsTab({
                 </span>
               )}
               </p>
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_available ? "bg-green-500/10 text-green-700 dark:text-green-400" : "bg-muted text-muted-foreground"}`}><span aria-hidden="true" className={`size-1.5 rounded-full ${item.is_available ? "bg-green-600" : "bg-slate-400"}`} />{item.is_available ? "Available" : "Unavailable"}</span>
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_available ? "bg-primary/15 text-primary dark:bg-primary/25 dark:text-[#ebc96f]" : "bg-muted text-muted-foreground"}`}><span aria-hidden="true" className={`size-1.5 rounded-full ${item.is_available ? "bg-primary dark:bg-[#ebc96f]" : "bg-muted-foreground"}`} />{item.is_available ? "Available" : "Unavailable"}</span>
             </div>
             {admin && (
               <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border pt-3">
@@ -233,13 +233,13 @@ export function MenuItemsTab({
                       <Button
                         variant="outline"
                         type="button"
-                        className={`inline-flex min-h-11 items-center gap-2 text-sm ${item.is_available ? "[&>span:first-child]:bg-green-600 [&>span:first-child>span]:translate-x-5" : ""}`}
+                        className={`inline-flex min-h-11 items-center gap-2 text-sm ${item.is_available ? "[&>span:first-child]:bg-primary [&>span:first-child>span]:translate-x-5" : ""}`}
                         role="switch"
                         aria-checked={item.is_available}
                         aria-label={`Availability for ${item.name}`}
                         onClick={() => onToggle(item)}
                       >
-                        <span className="relative inline-block h-7 w-12 rounded-full bg-slate-400 [&>span]:absolute [&>span]:top-1 [&>span]:left-1 [&>span]:size-5 [&>span]:rounded-full [&>span]:bg-white">
+                        <span className="relative inline-block h-7 w-12 rounded-full bg-muted-foreground/35 transition-colors [&>span]:absolute [&>span]:top-1 [&>span]:left-1 [&>span]:size-5 [&>span]:rounded-full [&>span]:bg-white [&>span]:transition-transform">
                           <span />
                         </span>
                         <span>

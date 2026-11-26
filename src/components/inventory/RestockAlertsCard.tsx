@@ -1,8 +1,10 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { InventoryItem, Notification } from "@/types/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { dateTime, qty } from "./shared";
+
 export function RestockAlertsCard({
   alerts,
   items,
@@ -31,21 +33,22 @@ export function RestockAlertsCard({
           ? -1
           : 1,
     );
+
   return (
-    <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xs">
-      <div className="flex items-start justify-between gap-3 border-b border-border p-5 [&_h2]:text-base [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+    <Card className="overflow-hidden">
+      <div className="flex items-start justify-between gap-3 border-b border-border p-4 sm:p-5 [&_h2]:text-base [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
         <div>
           <h2>Restock alerts</h2>
           <p>Items at or below their stock limits.</p>
         </div>
-        <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+        <Badge variant="info" className="tabular-nums">
           {open.length}
-        </span>
+        </Badge>
       </div>
       {open.length === 0 ? (
-        <div className="p-8 text-center text-sm text-muted-foreground">
+        <div className="space-y-3 p-6 text-center text-sm text-muted-foreground sm:p-8">
           <p>All tracked ingredients are above minimum stock limits.</p>
-          <Button variant="outline" className="min-h-11" onClick={onRefresh}>
+          <Button variant="outline" onClick={onRefresh}>
             Refresh alerts
           </Button>
         </div>
@@ -53,25 +56,28 @@ export function RestockAlertsCard({
         <div className="space-y-3 p-4">
           {open.map((a) => (
             <div
-              className="rounded-xl border border-border bg-muted p-3"
+              className="flex flex-col gap-2 rounded-xl border border-border bg-muted/40 p-3.5"
               key={a.id}
             >
-              <div>
+              <div className="space-y-1">
                 <StatusBadge
                   tone={a.severity === "CRITICAL" ? "critical" : "warning"}
                 >
                   {a.severity === "CRITICAL" ? "Critical" : "Low stock"}
                 </StatusBadge>
-                <strong>{a.message}</strong>
-                <small>
-                  Quantity: {qty(a.triggered_qty)} -{" "}
-                  {dateTime(a.last_notified_at)}
+                <strong className="block text-sm font-semibold text-foreground">
+                  {a.message}
+                </strong>
+                <small className="block text-xs text-muted-foreground tabular-nums">
+                  Quantity: {qty(a.triggered_qty)} · {dateTime(a.last_notified_at)}
                 </small>
               </div>
               {admin && !a.read_at && (
                 <Button
                   variant="outline"
-                  disabled={pending}
+                  size="sm"
+                  className="self-start"
+                  loading={pending}
                   onClick={() => onRead(a.id)}
                 >
                   Mark read

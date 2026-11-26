@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -84,7 +85,7 @@ export function SyncQueueDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85dvh] max-w-xl flex-col overflow-hidden">
+      <DialogContent className="max-h-[85dvh] sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Offline Billing Sync Queue</DialogTitle>
           <DialogDescription>
@@ -94,7 +95,7 @@ export function SyncQueueDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="pos-scroll min-h-0 flex-1 space-y-2 overflow-y-auto py-2 pr-1">
+        <DialogBody className="space-y-2">
           {queuedBills.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground">
               <CheckCircle2 className="size-8 text-emerald-500" aria-hidden="true" />
@@ -181,9 +182,9 @@ export function SyncQueueDialog({
               );
             })
           )}
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="flex-wrap gap-2 border-t border-border pt-3 sm:justify-between">
+        <DialogFooter className="sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <Button
             variant="outline"
             size="sm"
@@ -205,13 +206,11 @@ export function SyncQueueDialog({
             )}
             <Button
               size="sm"
-              disabled={isSyncing || queuedBills.length === 0}
+              loading={isSyncing}
+              disabled={queuedBills.length === 0}
+              leftIcon={!isSyncing ? <RefreshCw className="size-4" aria-hidden="true" /> : undefined}
               onClick={() => void syncNow()}
             >
-              <RefreshCw
-                className={`size-4 ${isSyncing ? "animate-spin" : ""}`}
-                aria-hidden="true"
-              />
               {isSyncing ? "Syncing..." : "Sync Now"}
             </Button>
           </div>

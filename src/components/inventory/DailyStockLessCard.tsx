@@ -1,18 +1,19 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
-
 import { useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import { FormField } from "@/components/shared/form-field";
 import type { InventoryItem } from "@/types/domain";
 import type { DailyEntryInput } from "@/services/api/types";
 import { getBusinessDateIST } from "@/lib/format";
 import { qty } from "./shared";
 import { ApiError } from "@/types/api";
+
 const schema = z
   .object({
     business_date: z.string().min(1, "Select a business date"),
@@ -25,7 +26,9 @@ const schema = z
     path: ["used_qty"],
     message: "Enter a quantity used or wasted.",
   });
+
 type Values = z.infer<typeof schema>;
+
 export function DailyStockLessCard({
   items,
   onSubmit,
@@ -57,6 +60,7 @@ export function DailyStockLessCard({
   });
   const id = useWatch({ control, name: "inventory_item_id" });
   const selected = items.find((x) => x.id === Number(id));
+
   async function post(input: DailyEntryInput) {
     if (lock.current) return;
     lock.current = true;
@@ -82,6 +86,7 @@ export function DailyStockLessCard({
       lock.current = false;
     }
   }
+
   function submit(v: Values) {
     const item = items.find((i) => i.id === Number(v.inventory_item_id));
     if (!item || !item.is_active) {
@@ -106,31 +111,41 @@ export function DailyStockLessCard({
       request_key: crypto.randomUUID(),
     });
   }
+
   return (
-    <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xs">
-      <div className="flex items-start justify-between gap-3 border-b border-border p-5 [&_h2]:text-base [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-        <div>
-          <h2>Daily stock less</h2>
-          <p>Record actual kitchen use and spoiled stock separately.</p>
-        </div>
+    <Card className="overflow-hidden">
+      <div className="border-b border-border p-4 sm:p-5 [&_h2]:text-base [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+        <h2>Daily stock less</h2>
+        <p>Record actual kitchen use and spoiled stock separately.</p>
       </div>
       <form
-        className="space-y-4 p-5 [&_label]:block [&_label]:text-sm [&_label]:font-semibold [&_label_input:not([type=checkbox])]:mt-2 [&_label_select]:mt-2 [&_label_textarea]:mt-2"
+        className="space-y-4 p-4 sm:p-5"
         onSubmit={(e) => void handleSubmit(submit)(e)}
       >
-        <fieldset className="space-y-4" disabled={pending || !!retry}>
-          <label>
-            Business date
-            <Input type="date" {...register("business_date")} />
-          </label>
-          {errors.business_date && (
-            <p className="text-sm text-destructive">
-              {errors.business_date.message}
-            </p>
-          )}
-          <label>
-            Stock item
-            <NativeSelect {...register("inventory_item_id")}>
+        <fieldset className="space-y-4 border-0" disabled={pending || !!retry}>
+          <FormField
+            label="Business date"
+            htmlFor="daily-business-date"
+            error={errors.business_date?.message}
+          >
+            <Input
+              id="daily-business-date"
+              type="date"
+              error={Boolean(errors.business_date)}
+              {...register("business_date")}
+            />
+          </FormField>
+
+          <FormField
+            label="Stock item"
+            htmlFor="daily-stock-item"
+            error={errors.inventory_item_id?.message}
+          >
+            <NativeSelect
+              id="daily-stock-item"
+              error={Boolean(errors.inventory_item_id)}
+              {...register("inventory_item_id")}
+            >
               <option value="">Select an item</option>
               {items
                 .filter((i) => i.is_active)
@@ -140,67 +155,72 @@ export function DailyStockLessCard({
                   </option>
                 ))}
             </NativeSelect>
-          </label>
-          {errors.inventory_item_id && (
-            <p className="text-sm text-destructive">
-              {errors.inventory_item_id.message}
-            </p>
-          )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label>
-              Used quantity
+          </FormField>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField
+              label="Used quantity"
+              htmlFor="daily-used-qty"
+              error={errors.used_qty?.message}
+            >
               <Input
+                id="daily-used-qty"
                 type="number"
+                inputMode="decimal"
+                suffixText={selected?.unit}
                 min="0"
                 step="0.001"
+                error={Boolean(errors.used_qty)}
                 {...register("used_qty", { valueAsNumber: true })}
               />
-            </label>
-            <label>
-              Wasted quantity
+            </FormField>
+            <FormField
+              label="Wasted quantity"
+              htmlFor="daily-wasted-qty"
+              error={errors.wasted_qty?.message}
+            >
               <Input
+                id="daily-wasted-qty"
                 type="number"
+                inputMode="decimal"
+                suffixText={selected?.unit}
                 min="0"
                 step="0.001"
+                error={Boolean(errors.wasted_qty)}
                 {...register("wasted_qty", { valueAsNumber: true })}
               />
-            </label>
+            </FormField>
           </div>
+
           {selected && (
-            <p className="text-xs leading-relaxed text-muted-foreground">
+            <p className="text-xs leading-relaxed text-muted-foreground tabular-nums">
               Available: {qty(selected.current_qty)} {selected.unit}
             </p>
           )}
-          {errors.used_qty && (
-            <p className="text-sm text-destructive" role="alert">
-              {errors.used_qty.message}
-            </p>
-          )}
-          {errors.wasted_qty && (
-            <p className="text-sm text-destructive" role="alert">
-              {errors.wasted_qty.message}
-            </p>
-          )}
-          <label>
-            Note <span>Optional</span>
+
+          <FormField label="Note (Optional)" htmlFor="daily-note">
             <Input
+              id="daily-note"
               maxLength={255}
               placeholder="Add a note"
               {...register("notes")}
             />
-          </label>
+          </FormField>
         </fieldset>
+
         {error && (
-          <p className="text-sm text-destructive" role="alert">
+          <p className="text-sm font-medium text-destructive" role="alert">
             {error}
           </p>
         )}
+
         {retry ? (
           <Button
             variant="default"
             type="button"
-            className="min-h-11 w-full"
-            disabled={pending}
+            size="lg"
+            className="w-full"
+            loading={pending}
             onClick={() => void post(retry)}
           >
             {pending ? "Saving..." : "Retry entry"}
@@ -209,8 +229,9 @@ export function DailyStockLessCard({
           <Button
             variant="success"
             type="submit"
-            className="min-h-11 w-full"
-            disabled={pending}
+            size="lg"
+            className="w-full"
+            loading={pending}
           >
             {pending ? "Saving..." : "Save daily entry"}
           </Button>

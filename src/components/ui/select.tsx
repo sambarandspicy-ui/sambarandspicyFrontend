@@ -8,20 +8,24 @@ export const Select = Primitive.Root;
 export const SelectValue = Primitive.Value;
 export const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof Primitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof Primitive.Trigger>
->(function SelectTrigger({ className, children, ...props }, ref) {
+  React.ComponentPropsWithoutRef<typeof Primitive.Trigger> & { error?: boolean }
+>(function SelectTrigger({ className, children, error, ...props }, ref) {
+  const invalid = Boolean(error || props["aria-invalid"]);
   return (
     <Primitive.Trigger
       ref={ref}
+      aria-invalid={invalid || undefined}
       className={cn(
-        "flex h-10 w-full items-center justify-between rounded-xl border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+        "flex h-11 w-full items-center justify-between rounded-xl border border-input bg-background px-3 text-base text-foreground transition-shadow outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:text-sm",
+        invalid &&
+          "border-destructive focus:border-destructive focus:ring-destructive/25 focus-visible:border-destructive focus-visible:ring-destructive/25",
         className,
       )}
       {...props}
     >
       {children}
       <Primitive.Icon asChild>
-        <ChevronDown className="size-4 opacity-60" />
+        <ChevronDown className="size-4 shrink-0 opacity-60" />
       </Primitive.Icon>
     </Primitive.Trigger>
   );
@@ -39,7 +43,7 @@ export const SelectContent = React.forwardRef<
         ref={ref}
         position={position}
         className={cn(
-          "z-[80] min-w-[10rem] overflow-hidden rounded-xl border border-border bg-card p-1 text-card-foreground shadow-lg",
+          "z-[80] min-w-[10rem] overflow-hidden rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg",
           className,
         )}
         {...props}
@@ -65,7 +69,7 @@ export const SelectItem = React.forwardRef<
       <Primitive.ItemText>{children}</Primitive.ItemText>
       <span className="absolute right-2">
         <Primitive.ItemIndicator>
-          <Check className="size-4" />
+          <Check className="size-4 text-primary" />
         </Primitive.ItemIndicator>
       </span>
     </Primitive.Item>
@@ -73,13 +77,17 @@ export const SelectItem = React.forwardRef<
 });
 export const NativeSelect = React.forwardRef<
   HTMLSelectElement,
-  React.ComponentProps<"select">
->(function NativeSelect({ className, ...props }, ref) {
+  React.ComponentProps<"select"> & { error?: boolean }
+>(function NativeSelect({ className, error, ...props }, ref) {
+  const invalid = Boolean(error || props["aria-invalid"]);
   return (
     <select
       ref={ref}
+      aria-invalid={invalid || undefined}
       className={cn(
-        "min-h-11 w-full rounded-xl border border-input bg-background px-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 sm:min-h-10 sm:text-sm",
+        "h-11 w-full rounded-xl border border-input bg-background px-3 text-base text-foreground transition-shadow outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:text-sm",
+        invalid &&
+          "border-destructive focus:border-destructive focus:ring-destructive/25 focus-visible:border-destructive focus-visible:ring-destructive/25",
         className,
       )}
       {...props}

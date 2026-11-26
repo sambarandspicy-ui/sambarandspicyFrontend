@@ -141,7 +141,7 @@ export function AdminWorkspace() {
         />
       )}
       <nav
-        className="flex max-w-full flex-nowrap gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
+        className="pos-scroll no-scrollbar flex max-w-full flex-nowrap gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
         role="group"
         aria-label="Administration sections"
       >

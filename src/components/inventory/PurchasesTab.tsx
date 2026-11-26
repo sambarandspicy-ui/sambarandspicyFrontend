@@ -1,16 +1,16 @@
 "use client";
+import { useState } from "react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import {
   Table,
-  TableHeader,
   TableBody,
-  TableRow,
-  TableHead,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-
-import { useState } from "react";
 import type {
   InventoryItem,
   StockPurchase,
@@ -18,6 +18,7 @@ import type {
 } from "@/types/domain";
 import { formatINR } from "@/lib/format";
 import { DateFilters, inDates, qty, unitCost } from "./shared";
+
 export function PurchasesTab({
   purchases,
   items,
@@ -28,6 +29,7 @@ export function PurchasesTab({
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
+
   const rows = purchases
     .filter(
       (p) =>
@@ -39,47 +41,83 @@ export function PurchasesTab({
     .sort(
       (a, b) => b.business_date.localeCompare(a.business_date) || b.id - a.id,
     );
+
   return (
-    <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xs">
-      <div className="flex items-start justify-between gap-3 border-b border-border p-5 [&_h2]:text-base [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-        <div>
-          <h2>Buying stock</h2>
-          <p>Purchase history and line items.</p>
-        </div>
+    <Card className="overflow-hidden">
+      <div className="border-b border-border p-4 sm:p-5 [&_h2]:text-base [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+        <h2>Buying stock</h2>
+        <p>Purchase history and line items.</p>
       </div>
-      <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3 [&_label]:text-sm [&_label]:font-semibold [&_input]:mt-2 [&_select]:mt-2">
+      <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3 [&_label]:block [&_label]:text-sm [&_label]:font-semibold">
         <DateFilters from={from} to={to} onFrom={setFrom} onTo={setTo} />
         <label>
           Search
           <Input
+            containerClassName="mt-2"
+            leadingIcon={<Search size={16} />}
+            clearable
+            clearLabel="Clear search"
+            onClear={() => setSearch("")}
             placeholder="Supplier or reference"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </label>
       </div>
+
       {rows.length === 0 ? (
         <p className="p-8 text-center text-sm text-muted-foreground">
           No purchases match these filters.
         </p>
       ) : (
-        <div className="space-y-3 p-4">
+        <div className="space-y-3 p-4 sm:p-5">
           {rows.map((p) => (
-            <details className="rounded-xl border border-border p-4" key={p.id}>
-              <summary>
-                <span>
-                  <strong>{p.purchase_reference || `Purchase #${p.id}`}</strong>
-                  <small>
-                    {p.business_date} - {p.supplier_name || "No supplier"} -
-                    User #{p.created_by}
+            <details className="rounded-xl border border-border bg-muted/20 p-3.5 sm:p-4" key={p.id}>
+              <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="min-w-0">
+                  <strong className="block truncate">
+                    {p.purchase_reference || `Purchase #${p.id}`}
+                  </strong>
+                  <small className="text-xs text-muted-foreground">
+                    {p.business_date} · {p.supplier_name || "No supplier"} · User #
+                    {p.created_by}
                   </small>
                 </span>
-                <span>
-                  {p.lines.length} items{" "}
-                  <strong>{formatINR(p.total_amount)}</strong>
+                <span className="shrink-0 text-right tabular-nums">
+                  <span className="mr-2 text-xs text-muted-foreground">
+                    {p.lines.length} items
+                  </span>
+                  <strong className="text-primary dark:text-[#ebc96f]">
+                    {formatINR(p.total_amount)}
+                  </strong>
                 </span>
               </summary>
-              <div className="w-full overflow-x-auto">
+
+              {/* Mobile card list for line items */}
+              <div className="mt-3 space-y-2 md:hidden">
+                {p.lines.map((l) => (
+                  <div
+                    key={l.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-xs tabular-nums"
+                  >
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm">
+                        {items.find((i) => i.id === l.inventory_item_id)?.name ??
+                          `Item #${l.inventory_item_id}`}
+                      </strong>
+                      <span className="text-muted-foreground">
+                        {qty(l.quantity)} × {unitCost(l.unit_cost)}
+                      </span>
+                    </div>
+                    <strong className="shrink-0 text-sm">
+                      {formatINR(l.line_total)}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="mt-3 hidden w-full overflow-x-auto md:block">
                 <Table className="w-full text-left text-sm tabular-nums">
                   <TableHeader>
                     <TableRow>

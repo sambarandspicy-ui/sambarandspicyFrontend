@@ -2,6 +2,7 @@
 "use client";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DietaryBadge } from "@/components/shared/dietary-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
@@ -9,24 +10,27 @@ import {
   Banknote,
   Check,
   CreditCard,
+  FolderClock,
+  LockKeyhole,
   Minus,
+  PauseCircle,
   Plus,
+  Printer,
   ReceiptText,
   Trash2,
   WalletCards,
-  FolderClock,
-  LockKeyhole,
-  PauseCircle,
-  Printer,
 } from "lucide-react";
 import type { BillingCart } from "@/hooks/useBillingCart";
 import type { Category, MenuItem, PaymentMethod } from "@/types/domain";
 import { formatINR } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
 const methods: { id: PaymentMethod; label: string; icon: typeof Banknote }[] = [
   { id: "CASH", label: "Cash", icon: Banknote },
   { id: "UPI", label: "UPI", icon: WalletCards },
   { id: "CARD", label: "Card", icon: CreditCard },
 ];
+
 export function BillingCartPanel({
   cart,
   canEdit,
@@ -40,6 +44,8 @@ export function BillingCartPanel({
   roundOffAvailable,
   roundOffLoading,
   onRetryRoundOff,
+  inSheet = false,
+  onCloseSheet,
 }: {
   roundOffAvailable: boolean;
   roundOffLoading: boolean;
@@ -53,64 +59,74 @@ export function BillingCartPanel({
   onProceedToCheckout: () => void;
   menu: MenuItem[];
   categories: Category[];
+  inSheet?: boolean;
+  onCloseSheet?: () => void;
 }) {
   const [clearOpen, setClearOpen] = useState(false);
+
   return (
     <aside
-      className="flex h-full min-h-[calc(100dvh-5rem)] sm:min-h-[calc(100dvh-5.5rem)] scroll-mt-14 sm:scroll-mt-16 flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm lg:min-h-0 lg:h-full"
-      id="billing-cart-panel"
+      className={cn(
+        "flex flex-col overflow-hidden bg-card text-card-foreground",
+        inSheet
+          ? "min-h-0 flex-1"
+          : "h-full rounded-2xl border border-border shadow-[0_4px_20px_rgba(16,59,32,0.06)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.28)]",
+      )}
+      id={inSheet ? undefined : "billing-cart-panel"}
       aria-label="Current bill"
     >
-      <div className="flex shrink-0 flex-wrap items-start justify-between gap-2 border-b border-border p-4 [&_h2]:text-lg [&_h2]:font-bold">
-        <div>
+      <div
+        className={cn(
+          "flex shrink-0 flex-wrap items-start justify-between gap-2 border-b border-border p-4 [&_h2]:text-lg [&_h2]:font-bold",
+          inSheet && "pr-14",
+        )}
+      >
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="min-h-9 -ml-2 gap-1 px-2 text-muted-foreground lg:hidden"
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  const top = document.getElementById("billing-menu-top");
-                  if (top) {
-                    top.scrollIntoView({ behavior: "smooth", block: "start" });
-                  } else {
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }
-                }
-              }}
-              aria-label="Back to menu"
-            >
-              <ArrowLeft size={16} aria-hidden="true" />
-              <span className="text-xs font-semibold">Menu</span>
-            </Button>
+            {inSheet && onCloseSheet ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-9 shrink-0 gap-1.5 px-2.5"
+                onClick={onCloseSheet}
+                aria-label="Back to menu"
+              >
+                <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+                <span className="text-xs font-semibold">Menu</span>
+              </Button>
+            ) : null}
             <h2>Current Bill</h2>
           </div>
           {cart.state.resumedBillId && (
-            <span className="mt-2 inline-block rounded-lg bg-blue-50 px-2 py-1 text-xs text-blue-700">
+            <span className="mt-1.5 inline-block rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary dark:border-[#ebc96f]/30 dark:text-[#ebc96f]">
               Resumed:{" "}
-              {cart.state.holdLabel ||
-                `Held Order #${cart.state.resumedBillId}`}
+              {cart.state.holdLabel || `Held Order #${cart.state.resumedBillId}`}
             </span>
           )}
-          <Button
-            variant="ghost"
-            className="mt-2 min-h-11 border border-orange-200 bg-orange-50 px-3 text-orange-700"
-            onClick={onHeld}
-          >
-            <span>
-              <FolderClock size={16} /> Held Bills
-            </span>
-            <strong>{heldCount}</strong>
-          </Button>
+          <div className="mt-2">
+            <Button
+              variant="subtle"
+              size="sm"
+              className="min-h-10 gap-1.5 border border-[#b58a27]/35 px-3"
+              onClick={onHeld}
+            >
+              <FolderClock size={15} aria-hidden="true" />
+              <span>Held Bills</span>
+              <strong className="rounded-md bg-black/10 px-1.5 py-0.5 text-xs tabular-nums dark:bg-white/10">
+                {heldCount}
+              </strong>
+            </Button>
+          </div>
         </div>
-        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1">
+
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
           {headerActions}
           {canEdit &&
-            (cart.state.items.length > 0 ||
-              cart.state.resumedBillId !== null) && (
+            (cart.state.items.length > 0 || cart.state.resumedBillId !== null) && (
               <Button
                 variant="ghost"
-                className="min-h-11 px-2 text-muted-foreground"
+                size="sm"
+                className="min-h-10 px-2.5 text-muted-foreground"
                 onClick={() => setClearOpen(true)}
               >
                 Clear Cart
@@ -118,32 +134,29 @@ export function BillingCartPanel({
             )}
         </div>
       </div>
+
       {!canEdit ? (
         <div className="flex min-h-48 flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-muted-foreground [&_h3]:font-bold [&_h3]:text-foreground">
-          <span>
-            <LockKeyhole size={20} />
-          </span>
+          <LockKeyhole size={20} aria-hidden="true" />
           <h3>Read-only access</h3>
-          <p>
+          <p className="text-sm">
             You can browse the menu and inspect held bills. Billing actions are
             disabled for this account.
           </p>
         </div>
       ) : (
         <>
-          <div className="flex-1 min-h-0 space-y-2 p-3 overflow-y-auto">
+          <div className="pos-scroll min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {cart.state.items.length === 0 ? (
               <div className="flex min-h-40 flex-col items-center justify-center gap-2 p-5 text-center text-muted-foreground [&_strong]:text-foreground">
-                <span>
-                  <ReceiptText size={23} />
-                </span>
+                <ReceiptText size={24} aria-hidden="true" />
                 <strong>Your cart is empty</strong>
-                <p>Select dishes from the menu to start a bill</p>
+                <p className="text-sm">Select dishes from the menu to start a bill</p>
               </div>
             ) : (
               cart.state.items.map((item) => (
                 <div
-                  className="flex gap-3 rounded-xl border border-border bg-muted/60 p-3"
+                  className="flex gap-3 rounded-xl border border-border bg-muted/50 p-3"
                   key={`${item.menuItemId}:${item.portion}`}
                 >
                   <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted [&_img]:h-full [&_img]:w-full [&_img]:object-cover">
@@ -157,39 +170,36 @@ export function BillingCartPanel({
                         }}
                       />
                     ) : (
-                      <ReceiptText size={19} />
+                      <ReceiptText size={19} aria-hidden="true" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1 text-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <strong>
+                    <div className="flex items-start justify-between gap-2">
+                      <strong className="flex min-w-0 items-center gap-1.5 leading-snug">
                         <DietaryBadge
                           type={
                             menu.find((dish) => dish.id === item.menuItemId)
                               ?.dietary_type ?? "UNSPECIFIED"
                           }
-                        />{" "}
-                        {item.name}
+                        />
+                        <span className="break-words">{item.name}</span>
                       </strong>
                       <Button
                         variant="ghost"
-                        className="size-10 shrink-0 p-0 text-muted-foreground"
+                        size="icon"
+                        className="size-9 shrink-0 text-muted-foreground hover:text-destructive"
                         aria-label={`Remove ${item.portion === "HALF" ? "half " : ""}${item.name}`}
-                        onClick={() =>
-                          cart.remove(item.menuItemId, item.portion)
-                        }
+                        onClick={() => cart.remove(item.menuItemId, item.portion)}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={16} aria-hidden="true" />
                       </Button>
                     </div>
-                    <p>
+                    <p className="text-xs text-muted-foreground">
                       {item.portion === "HALF" ? "Half" : "Full"} ·{" "}
                       {formatINR(item.unitPrice)} / item
                     </p>
                     {(() => {
-                      const current = menu.find(
-                        (m) => m.id === item.menuItemId,
-                      );
+                      const current = menu.find((m) => m.id === item.menuItemId);
                       if (
                         !current ||
                         !current.is_available ||
@@ -202,7 +212,7 @@ export function BillingCartPanel({
                       )
                         return (
                           <p
-                            className="my-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                            className="my-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
                             role="status"
                           >
                             Unavailable now. Remove this item before checkout.
@@ -215,7 +225,7 @@ export function BillingCartPanel({
                       if (currentPrice !== item.unitPrice)
                         return (
                           <p
-                            className="my-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                            className="my-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
                             role="status"
                           >
                             Saved price {formatINR(item.unitPrice)}; current
@@ -226,36 +236,28 @@ export function BillingCartPanel({
                       return null;
                     })()}
                     <div className="mt-2 flex items-center justify-between gap-2">
-                      <div className="flex items-center rounded-lg border border-border bg-card [&_button]:size-11 [&_button]:p-0 [&_span]:min-w-6 [&_span]:text-center">
+                      <div className="flex items-center rounded-xl border border-border bg-card [&_button]:size-9 [&_button]:p-0 [&_span]:min-w-7 [&_span]:text-center [&_span]:font-semibold">
                         <Button
                           variant="ghost"
                           aria-label={`Decrease ${item.portion === "HALF" ? "half " : ""}${item.name}`}
                           onClick={() =>
-                            cart.changeQuantity(
-                              item.menuItemId,
-                              item.portion,
-                              -1,
-                            )
+                            cart.changeQuantity(item.menuItemId, item.portion, -1)
                           }
                         >
-                          <Minus size={14} />
+                          <Minus size={14} aria-hidden="true" />
                         </Button>
-                        <span>{item.quantity}</span>
+                        <span className="tabular-nums">{item.quantity}</span>
                         <Button
                           variant="ghost"
                           aria-label={`Increase ${item.portion === "HALF" ? "half " : ""}${item.name}`}
                           onClick={() =>
-                            cart.changeQuantity(
-                              item.menuItemId,
-                              item.portion,
-                              1,
-                            )
+                            cart.changeQuantity(item.menuItemId, item.portion, 1)
                           }
                         >
-                          <Plus size={14} />
+                          <Plus size={14} aria-hidden="true" />
                         </Button>
                       </div>
-                      <strong>
+                      <strong className="tabular-nums text-foreground">
                         {formatINR(
                           (Math.round(item.unitPrice * 100) * item.quantity -
                             Math.round(item.lineDiscount * 100)) /
@@ -268,88 +270,127 @@ export function BillingCartPanel({
               ))
             )}
           </div>
-          <div className="shrink-0 border-t border-border bg-muted/70 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+
+          <div className="shrink-0 border-t border-border bg-secondary/70 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] dark:bg-muted/60">
             <div className="space-y-2 text-sm [&>div]:flex [&>div]:justify-between [&>div]:gap-2">
               <div>
-                <span>
+                <span className="text-muted-foreground">
                   Subtotal ({cart.totals.count}{" "}
                   {cart.totals.count === 1 ? "item" : "items"})
                 </span>
-                <strong>{formatINR(cart.totals.subtotal)}</strong>
+                <strong className="tabular-nums">
+                  {formatINR(cart.totals.subtotal)}
+                </strong>
               </div>
               {cart.totals.discount > 0 && (
                 <div>
-                  <span>Discount</span>
-                  <strong>-{formatINR(cart.totals.discount)}</strong>
+                  <span className="text-muted-foreground">Discount</span>
+                  <strong className="tabular-nums">
+                    -{formatINR(cart.totals.discount)}
+                  </strong>
                 </div>
               )}
-              {cart.state.items.length > 0 && (Math.round(cart.totals.net * 100) % 100 !== 0 || cart.state.roundOff) && (
-                roundOffAvailable ? (
-                  <label className="flex min-h-11 items-center justify-between gap-2 text-sm font-medium">
-                    <span className="flex items-center gap-2"><input type="checkbox" className="size-4 shrink-0 accent-blue-600" checked={cart.state.roundOff && cart.totals.canRound} disabled={!cart.totals.canRound} onChange={(event) => cart.setRoundOff(event.target.checked)} />Round off to nearest rupee</span>
-                    {cart.state.roundOff && cart.totals.canRound && <strong className="shrink-0 tabular-nums">{cart.totals.roundOff < 0 ? "-" : "+"}{formatINR(Math.abs(cart.totals.roundOff))}</strong>}
+              {cart.state.items.length > 0 &&
+                (Math.round(cart.totals.net * 100) % 100 !== 0 ||
+                  cart.state.roundOff) &&
+                (roundOffAvailable ? (
+                  <label className="flex min-h-10 items-center justify-between gap-2 text-sm font-medium">
+                    <span className="flex items-center gap-2">
+                      <Input
+                        type="checkbox"
+                        checked={cart.state.roundOff && cart.totals.canRound}
+                        disabled={!cart.totals.canRound}
+                        onChange={(event) => cart.setRoundOff(event.target.checked)}
+                      />
+                      Round off to nearest rupee
+                    </span>
+                    {cart.state.roundOff && cart.totals.canRound && (
+                      <strong className="shrink-0 tabular-nums">
+                        {cart.totals.roundOff < 0 ? "-" : "+"}
+                        {formatINR(Math.abs(cart.totals.roundOff))}
+                      </strong>
+                    )}
                   </label>
                 ) : (
-                  <div className="flex min-h-11 items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span>{roundOffLoading ? "Checking round off..." : "Round off unavailable"}</span>
-                    {!roundOffLoading && <Button variant="ghost" className="min-h-11 px-2 text-xs" onClick={onRetryRoundOff}>Retry</Button>}
+                  <div className="flex min-h-10 items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>
+                      {roundOffLoading
+                        ? "Checking round off..."
+                        : "Round off unavailable"}
+                    </span>
+                    {!roundOffLoading && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="px-2 text-xs"
+                        onClick={onRetryRoundOff}
+                      >
+                        Retry
+                      </Button>
+                    )}
                   </div>
-                )
-              )}
+                ))}
               <div className="border-t border-border pt-3 text-base font-bold [&_strong]:text-2xl [&_strong]:tabular-nums">
                 <span>Grand Total</span>
-                <strong>{formatINR(cart.totals.total)}</strong>
+                <strong className="text-primary dark:text-[#ebc96f]">
+                  {formatINR(cart.totals.total)}
+                </strong>
               </div>
             </div>
-            <div className="mt-4 mb-2 text-sm font-semibold">Payment mode</div>
-            <div
-              className="grid grid-cols-3 gap-2"
-              role="group"
-              aria-label="Payment mode"
-            >
-              {methods.map(({ id, label, icon: Icon }) => (
-                <Button
-                  variant="ghost"
-                  key={id}
-                  className={
-                    cart.state.paymentMethod === id
-                      ? "min-h-11 border border-primary bg-primary/10 text-primary"
-                      : "min-h-11 border border-border"
-                  }
-                  aria-pressed={cart.state.paymentMethod === id}
-                  onClick={() => cart.setPayment(id)}
-                >
-                  <Icon size={17} />
-                  {label}
-                  {cart.state.paymentMethod === id && (
-                    <Check size={13} className="size-3" />
-                  )}
-                </Button>
-              ))}
+
+            <div className="mt-3.5 mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Payment mode
             </div>
+            <div className="grid grid-cols-3 gap-2" role="group" aria-label="Payment mode">
+              {methods.map(({ id, label, icon: Icon }) => {
+                const selected = cart.state.paymentMethod === id;
+                return (
+                  <Button
+                    variant="outline"
+                    key={id}
+                    size="default"
+                    className={cn(
+                      "px-2",
+                      selected &&
+                        "border-primary bg-primary/10 text-primary ring-1 ring-[#b58a27]/40 dark:bg-primary/25 dark:text-[#ebc96f]",
+                    )}
+                    aria-pressed={selected}
+                    onClick={() => cart.setPayment(id)}
+                  >
+                    <Icon size={16} aria-hidden="true" />
+                    <span>{label}</span>
+                    {selected && <Check size={13} aria-hidden="true" />}
+                  </Button>
+                );
+              })}
+            </div>
+
             <div className="mt-3 grid grid-cols-[1fr_1.6fr] gap-2">
               <Button
                 variant="warning"
-                className="min-h-12 bg-warning px-2 text-white hover:bg-orange-700"
+                size="lg"
+                className="px-2.5"
                 disabled={!cart.state.items.length}
+                leftIcon={<PauseCircle size={17} aria-hidden="true" />}
                 onClick={onHold}
               >
-                <PauseCircle size={17} aria-hidden="true" />
                 Hold Bill
               </Button>
               <Button
-                variant="success"
-                className="min-h-12 bg-success px-2 text-white hover:bg-green-700"
+                variant="default"
+                size="lg"
+                className="px-2.5"
                 disabled={!cart.state.items.length}
+                leftIcon={<Printer size={17} aria-hidden="true" />}
                 onClick={onProceedToCheckout}
               >
-                <Printer size={17} aria-hidden="true" />
                 Complete &amp; Print
               </Button>
             </div>
           </div>
         </>
       )}
+
       <ConfirmDialog
         open={clearOpen}
         onOpenChange={setClearOpen}

@@ -63,9 +63,12 @@ export function DailySales() {
   }, [sales.data, queuedBills, businessDate]);
 
   return (
-    <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 text-sm sm:justify-end sm:gap-4 sm:px-6" aria-label="Today's sales">
+    <div
+      className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-b border-border bg-secondary/70 px-3 text-xs sm:justify-end sm:gap-4 sm:px-6 sm:text-sm dark:bg-card/80"
+      aria-label="Today's sales"
+    >
       <span className="font-medium text-muted-foreground">Today&apos;s sales</span>
-      <span className="text-right font-bold tabular-nums" role="status">
+      <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-right font-bold tabular-nums text-primary dark:bg-primary/25 dark:text-[#ebc96f]" role="status">
         {sales.isPending && !hasQueuedForToday
           ? "Loading..."
           : sales.isError && !hasQueuedForToday

@@ -1,7 +1,8 @@
-import { Boxes, CircleCheck, TriangleAlert, CircleAlert } from "lucide-react";
+import { Boxes, CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import type { InventoryItem } from "@/types/domain";
 import { getStockStatus } from "@/lib/calculations";
 import { StatCard } from "@/components/shared/stat-card";
+
 export function InventoryKpiCards({ items }: { items: InventoryItem[] }) {
   const active = items.filter((i) => i.is_active);
   const counts = [
@@ -24,8 +25,9 @@ export function InventoryKpiCards({ items }: { items: InventoryItem[] }) {
     { title: "Low-stock warnings", icon: TriangleAlert, tone: "warning" },
     { title: "Critical stock alerts", icon: CircleAlert, tone: "critical" },
   ] as const;
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {cards.map((c, i) => (
         <StatCard
           key={c.title}
@@ -34,12 +36,12 @@ export function InventoryKpiCards({ items }: { items: InventoryItem[] }) {
           tone={c.tone}
           className={
             counts[i] > 0 && c.tone === "critical"
-              ? "border-red-400"
+              ? "border-destructive/50"
               : counts[i] > 0 && c.tone === "warning"
-                ? "border-amber-400"
+                ? "border-warning/50"
                 : undefined
           }
-          icon={<c.icon size={19} />}
+          icon={<c.icon size={19} aria-hidden="true" />}
         />
       ))}
     </div>

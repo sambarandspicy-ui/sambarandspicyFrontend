@@ -196,11 +196,11 @@ export function CategoriesTab({
                         aria-checked={x.is_active}
                         aria-label={`Status for ${x.name}`}
                         onClick={() => onToggle(x)}
-                        className={`inline-flex min-h-11 items-center gap-2 text-sm ${x.is_active ? "[&>span:first-child]:bg-green-600 [&>span:first-child>span]:translate-x-5" : ""}`}
+                        className={`inline-flex min-h-11 items-center gap-2 text-sm ${x.is_active ? "[&>span:first-child]:bg-primary [&>span:first-child>span]:translate-x-5" : ""}`}
                       >
                         <span
                           aria-hidden="true"
-                          className="relative h-6 w-11 rounded-full bg-slate-300 transition-colors"
+                          className="relative h-6 w-11 rounded-full bg-muted-foreground/35 transition-colors"
                         >
                           <span className="absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform" />
                         </span>

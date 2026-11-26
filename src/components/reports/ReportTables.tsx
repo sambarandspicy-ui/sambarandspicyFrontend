@@ -1,45 +1,85 @@
 "use client";
+import { useState } from "react";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import {
   Table,
-  TableHeader,
   TableBody,
-  TableFooter,
-  TableRow,
-  TableHead,
   TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-
-import { useState } from "react";
 import type { BillDetail } from "@/types/domain";
 import { formatDecimal, formatINR } from "@/lib/format";
 import { qty } from "@/components/inventory/shared";
 import { istTime, type ReportData } from "./reportData";
+
 const percent = (n: number | null) =>
   n === null ? "N/A" : `${formatDecimal(n)}%`;
+
 export function TopSellersTable({ data }: { data: ReportData }) {
   const [search, setSearch] = useState("");
   const rows = data.sellers.filter((x) =>
     x.item_name.toLowerCase().includes(search.toLowerCase().trim()),
   );
+
   return (
-    <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+    <Card className="overflow-hidden">
+      <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
         <div>
           <h2>Top-selling menu items</h2>
           <p>Ranked by quantity sold.</p>
         </div>
-        <Input
-          aria-label="Search dishes"
-          placeholder="Search dishes"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="w-full sm:w-64">
+          <Input
+            aria-label="Search dishes"
+            placeholder="Search dishes"
+            value={search}
+            leadingIcon={<Search size={16} />}
+            clearable
+            clearLabel="Clear search"
+            onClear={() => setSearch("")}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
-      <div className="w-full overflow-x-auto">
+
+      {/* Mobile card list */}
+      <div className="space-y-2.5 p-4 md:hidden">
+        {rows.map((x) => (
+          <div
+            key={x.menu_item_id}
+            className="space-y-2 rounded-xl border border-border bg-muted/30 p-3.5 text-sm"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <strong className="min-w-0 truncate">
+                #{data.sellers.indexOf(x) + 1} · {x.item_name}
+              </strong>
+              <strong className="shrink-0 tabular-nums text-primary dark:text-[#ebc96f]">
+                {formatINR(x.sales_revenue)}
+              </strong>
+            </div>
+            <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground tabular-nums">
+              <span>Qty: {qty(x.quantity_sold)}</span>
+              <span>Share: {percent(x.sales_share_percent)}</span>
+              <span>
+                Est. contrib:{" "}
+                {x.estimated_contribution === null
+                  ? "N/A"
+                  : formatINR(x.estimated_contribution)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden w-full overflow-x-auto md:block">
         <Table className="w-full text-left text-sm tabular-nums">
           <TableHeader>
             <TableRow>
@@ -88,20 +128,18 @@ export function TopSellersTable({ data }: { data: ReportData }) {
             ))}
           </TableBody>
         </Table>
-        {!rows.length && (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            No menu sales match this period.{" "}
-            <Button
-              variant="outline"
-              className="min-h-11"
-              onClick={() => setSearch("")}
-            >
-              Clear search
-            </Button>
-          </div>
-        )}
       </div>
-      <p className="px-5 py-4 text-xs leading-relaxed text-muted-foreground">
+
+      {!rows.length && (
+        <div className="p-8 text-center text-sm text-muted-foreground">
+          No menu sales match this period.{" "}
+          <Button variant="outline" size="sm" onClick={() => setSearch("")}>
+            Clear search
+          </Button>
+        </div>
+      )}
+
+      <p className="px-4 py-4 text-xs leading-relaxed text-muted-foreground sm:px-5">
         *Estimated contribution is calculated from captured per-dish cost
         snapshots and is informational only; it is not added to operational
         profit.
@@ -109,6 +147,7 @@ export function TopSellersTable({ data }: { data: ReportData }) {
     </Card>
   );
 }
+
 export function SalesLedgerTable({
   data,
   onReceipt,
@@ -125,21 +164,29 @@ export function SalesLedgerTable({
         .includes(search.toLowerCase().trim()) &&
       (payment === "ALL" || x.payment?.payment_method === payment),
   );
+
   return (
-    <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+    <Card className="overflow-hidden">
+      <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
         <div>
           <h2>Sales ledger</h2>
           <p>Paid bills in the selected period.</p>
         </div>
-        <div className="flex flex-wrap gap-3 p-5 [&_label]:text-sm [&_label]:font-semibold [&_input]:mt-2 [&_select]:mt-2">
-          <Input
-            aria-label="Search bill number"
-            placeholder="Search bill number"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <div className="w-full sm:w-56">
+            <Input
+              aria-label="Search bill number"
+              placeholder="Search bill number"
+              value={search}
+              leadingIcon={<Search size={16} />}
+              clearable
+              clearLabel="Clear search"
+              onClear={() => setSearch("")}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           <NativeSelect
+            className="sm:w-40"
             aria-label="Filter payment method"
             value={payment}
             onChange={(e) => setPayment(e.target.value)}
@@ -151,7 +198,51 @@ export function SalesLedgerTable({
           </NativeSelect>
         </div>
       </div>
-      <div className="w-full overflow-x-auto">
+
+      {/* Mobile card list */}
+      <div className="space-y-2.5 p-4 md:hidden">
+        {rows.map((x) => (
+          <div
+            key={x.bill.id}
+            className="space-y-2 rounded-xl border border-border bg-muted/30 p-3.5 text-sm"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <strong className="block truncate">{x.bill.bill_number}</strong>
+                <span className="text-xs text-muted-foreground">
+                  {x.bill.paid_at ? istTime(x.bill.paid_at) : "-"}
+                </span>
+              </div>
+              <strong className="shrink-0 tabular-nums text-primary dark:text-[#ebc96f]">
+                {formatINR(x.bill.total_amount)}
+              </strong>
+            </div>
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span>
+                {x.cashier} · {x.bill.item_count} items ·{" "}
+                {x.payment?.payment_method ?? "-"}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  onReceipt({
+                    ...x.bill,
+                    items: x.items,
+                    payment: x.payment,
+                    cashier_name: x.cashier,
+                  })
+                }
+              >
+                Print receipt
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden w-full overflow-x-auto md:block">
         <Table className="w-full text-left text-sm tabular-nums">
           <TableHeader>
             <TableRow>
@@ -180,7 +271,7 @@ export function SalesLedgerTable({
                 <TableCell>
                   <Button
                     variant="outline"
-                    className="min-h-11"
+                    size="sm"
                     onClick={() =>
                       onReceipt({
                         ...x.bill,
@@ -197,25 +288,27 @@ export function SalesLedgerTable({
             ))}
           </TableBody>
         </Table>
-        {!rows.length && (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            No paid bills match these filters.{" "}
-            <Button
-              variant="outline"
-              className="min-h-11"
-              onClick={() => {
-                setSearch("");
-                setPayment("ALL");
-              }}
-            >
-              Reset filters
-            </Button>
-          </div>
-        )}
       </div>
+
+      {!rows.length && (
+        <div className="p-8 text-center text-sm text-muted-foreground">
+          No paid bills match these filters.{" "}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearch("");
+              setPayment("ALL");
+            }}
+          >
+            Reset filters
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }
+
 export function InventoryWasteTable({ data }: { data: ReportData }) {
   const sum = (
     key:
@@ -225,15 +318,43 @@ export function InventoryWasteTable({ data }: { data: ReportData }) {
       | "waste_cost"
       | "closing_value",
   ) => data.stock.reduce((n, x) => n + Math.round(x[key] * 100), 0) / 100;
+
   return (
-    <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-        <div>
-          <h2>Stock &amp; waste</h2>
-          <p>Quantities and values in the selected period.</p>
-        </div>
+    <Card className="overflow-hidden">
+      <div className="border-b border-border p-4 sm:p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+        <h2>Stock &amp; waste</h2>
+        <p>Quantities and values in the selected period.</p>
       </div>
-      <div className="w-full overflow-x-auto">
+
+      {/* Mobile card list */}
+      <div className="space-y-2.5 p-4 md:hidden">
+        {data.stock.map((x) => (
+          <div
+            key={x.inventory_item_id}
+            className="space-y-2 rounded-xl border border-border bg-muted/30 p-3.5 text-xs tabular-nums"
+          >
+            <div className="flex items-center justify-between gap-2 text-sm">
+              <strong>
+                {x.name} ({x.unit})
+              </strong>
+              <span className="font-semibold text-muted-foreground">
+                Waste: {percent(x.waste_ratio_percent)}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 rounded-lg bg-card p-2.5">
+              <span>Used: {qty(x.used_qty)} / {formatINR(x.used_cost)}</span>
+              <span className="text-destructive">
+                Waste: {qty(x.waste_qty)} / {formatINR(x.waste_cost)}
+              </span>
+              <span>Open: {qty(x.opening_qty)} / {formatINR(x.opening_value)}</span>
+              <span>Close: {qty(x.closing_qty)} / {formatINR(x.closing_value)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden w-full overflow-x-auto md:block">
         <Table className="w-full text-left text-sm tabular-nums">
           <TableHeader>
             <TableRow>
@@ -285,23 +406,45 @@ export function InventoryWasteTable({ data }: { data: ReportData }) {
           </TableFooter>
         </Table>
       </div>
-      <p className="px-5 py-4 text-xs leading-relaxed text-muted-foreground">
+
+      <p className="px-4 py-4 text-xs leading-relaxed text-muted-foreground sm:px-5">
         Stock values follow posted ledger movements; purchase cash outflow
         remains separate from operating profit.
       </p>
     </Card>
   );
 }
+
 export function OperatingExpensesTable({ data }: { data: ReportData }) {
   return (
-    <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-        <div>
-          <h2>Operating expenses</h2>
-          <p>Recorded expenses for this period.</p>
-        </div>
+    <Card className="overflow-hidden">
+      <div className="border-b border-border p-4 sm:p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+        <h2>Operating expenses</h2>
+        <p>Recorded expenses for this period.</p>
       </div>
-      <div className="w-full overflow-x-auto">
+
+      {/* Mobile card list */}
+      <div className="space-y-2.5 p-4 md:hidden">
+        {data.expenses.map((x) => (
+          <div
+            key={x.id}
+            className="flex items-start justify-between gap-2 rounded-xl border border-border bg-muted/30 p-3.5 text-sm"
+          >
+            <div className="min-w-0">
+              <strong className="block truncate">{x.description}</strong>
+              <span className="text-xs text-muted-foreground">
+                {x.business_date} · {x.expense_category} · User #{x.created_by}
+              </span>
+            </div>
+            <strong className="shrink-0 tabular-nums text-destructive">
+              {formatINR(x.amount)}
+            </strong>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden w-full overflow-x-auto md:block">
         <Table className="w-full text-left text-sm tabular-nums">
           <TableHeader>
             <TableRow>
@@ -333,12 +476,13 @@ export function OperatingExpensesTable({ data }: { data: ReportData }) {
             </TableRow>
           </TableFooter>
         </Table>
-        {!data.expenses.length && (
-          <p className="p-8 text-center text-sm text-muted-foreground">
-            No operating expenses recorded.
-          </p>
-        )}
       </div>
+
+      {!data.expenses.length && (
+        <p className="p-8 text-center text-sm text-muted-foreground">
+          No operating expenses recorded.
+        </p>
+      )}
     </Card>
   );
 }

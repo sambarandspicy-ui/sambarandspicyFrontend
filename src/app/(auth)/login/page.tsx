@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
-import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { ArrowRight, Lock, User as UserIcon } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/shared/form-field";
 import { dataMode } from "@/services/api";
 import { ApiError } from "@/types/api";
 import { WorkspaceLoading } from "@/components/shared/WorkspaceLoading";
@@ -36,7 +36,6 @@ export default function Login() {
   const { user, ready, login } = useAuth();
   const router = useRouter();
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [banner, setBanner] = useState("");
   const [pending, setPending] = useState<"form" | Role | null>(null);
@@ -57,9 +56,11 @@ export default function Login() {
       : reason === "demo_reset"
         ? "Demo data was reset successfully."
         : "");
+
   useEffect(() => {
     if (ready && user) router.replace("/billing");
   }, [ready, user, router]);
+
   async function demo(role: Role) {
     if (pending) return;
     setPending(role);
@@ -79,6 +80,7 @@ export default function Login() {
       );
     }
   }
+
   async function submit(values: Values) {
     if (pending) return;
     setPending("form");
@@ -95,35 +97,50 @@ export default function Login() {
       );
     }
   }
-  if (!ready || user)
-    return <WorkspaceLoading message={user ? "Opening workspace..." : "Loading workspace..."} />;
+
+  if (!ready || user) {
+    return (
+      <WorkspaceLoading
+        message={user ? "Opening workspace..." : "Loading workspace..."}
+      />
+    );
+  }
+
   return (
-    <main className="min-h-dvh bg-background px-4 py-8 text-foreground sm:px-6">
+    <main className="flex min-h-[100dvh] flex-col bg-background text-foreground">
       <OfflineBanner />
-      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-md flex-col justify-center">
-        <div className="mb-7 flex items-center justify-center gap-3 text-lg font-bold">
-          <span className="relative grid size-12 place-items-center overflow-hidden rounded-2xl border border-border/60 bg-muted/30 shadow-md">
-            <Image
-              src="/images/Sambar&SpicyRestaurantLogo.png"
-              alt="Sambar & Spicy Logo"
-              width={48}
-              height={48}
-              className="size-full object-cover"
-              priority
-            />
-          </span>
-          <span>Sambar &amp; Spicy</span>
-        </div>
-        <Card className="shadow-lg">
-          <CardHeader>
-            <span className="text-xs font-bold tracking-widest text-primary">
-              RESTAURANT WORKSPACE
-            </span>
-            <CardTitle className="mt-1 text-2xl">Welcome back</CardTitle>
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-6 sm:px-6">
+        <Card className="overflow-hidden border-[#b99a46]/40 shadow-xl">
+          <div className="border-b border-[#b99a46]/40 bg-[#103b20] px-5 py-5 text-[#fff9e9] sm:px-6">
+            <div className="flex items-center gap-3.5">
+              <span className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-full border border-[#d6b45e] bg-[#092b16] shadow-md">
+                <Image
+                  src="/images/Sambar&SpicyRestaurantLogo.png"
+                  alt="Sambar & Spicy Logo"
+                  width={48}
+                  height={48}
+                  className="size-full object-cover"
+                  priority
+                />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#ebc96f]">
+                  Restaurant Workspace
+                </p>
+                <p className="truncate text-lg font-bold tracking-tight text-[#fff7dc]">
+                  Sambar &amp; Spicy
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl sm:text-2xl">Welcome back</CardTitle>
             <CardDescription>
-              Sign in to manage your restaurant.
+              Sign in to access counter billing, inventory, and reports.
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             {notice && (
               <Alert variant="info" role="status" className="mb-4">
@@ -135,61 +152,61 @@ export default function Login() {
               noValidate
               className="space-y-4"
             >
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+              <FormField
+                label="Username"
+                htmlFor="username"
+                required
+                error={errors.username?.message}
+              >
                 <Input
                   id="username"
                   autoComplete="username"
                   placeholder="Enter your username"
-                  aria-invalid={!!errors.username}
+                  leadingIcon={<UserIcon className="size-4" />}
+                  error={Boolean(errors.username)}
                   {...register("username")}
                 />
-                {errors.username && (
-                  <p className="text-xs text-destructive">
-                    {errors.username.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    placeholder="Enter your password"
-                    aria-invalid={!!errors.password}
-                    className="pr-12"
-                    {...register("password")}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-1/2 size-11 -translate-y-1/2 text-muted-foreground"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    aria-controls="password"
-                    onClick={() => setShowPassword((visible) => !visible)}
-                  >
-                    {showPassword ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}
-                  </Button>
-                </div>
-                {errors.password && (
-                  <p className="text-xs text-destructive">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
+              </FormField>
+
+              <FormField
+                label="Password"
+                htmlFor="password"
+                required
+                error={errors.password?.message}
+              >
+                <Input
+                  id="password"
+                  type="password"
+                  showPasswordToggle
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  leadingIcon={<Lock className="size-4" />}
+                  error={Boolean(errors.password)}
+                  {...register("password")}
+                />
+              </FormField>
+
               {error && (
                 <Alert variant="destructive" role="alert">
                   {error}
                 </Alert>
               )}
-              <Button type="submit" size="lg" className="w-full" disabled={pending !== null} aria-busy={pending === "form"}>
-                {pending === "form" ? <><LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> Signing in...</> : <>Sign in <ArrowRight size={17} aria-hidden="true" /></>}
+
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                loading={pending === "form"}
+                disabled={pending !== null}
+                rightIcon={<ArrowRight size={17} aria-hidden="true" />}
+              >
+                {pending === "form" ? "Signing in..." : "Sign in"}
               </Button>
-              <span className="sr-only" role="status">{pending === "form" ? "Signing in, please wait." : ""}</span>
+              <span className="sr-only" role="status">
+                {pending === "form" ? "Signing in, please wait." : ""}
+              </span>
             </form>
+
             {dataMode === "mock" && (
               <div className="mt-6 border-t border-border pt-5">
                 <div className="flex justify-between gap-2 text-sm font-semibold">
@@ -201,7 +218,7 @@ export default function Login() {
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
                   <Button
                     variant="outline"
-                    className="h-auto min-h-16 flex-col gap-1 whitespace-normal"
+                    className="h-auto min-h-16 flex-col gap-1 whitespace-normal py-2"
                     aria-label="Admin"
                     disabled={pending !== null}
                     onClick={() => void demo("ADMIN")}
@@ -214,7 +231,7 @@ export default function Login() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-auto min-h-16 flex-col gap-1 whitespace-normal"
+                    className="h-auto min-h-16 flex-col gap-1 whitespace-normal py-2"
                     aria-label="Billing"
                     disabled={pending !== null}
                     onClick={() => void demo("BILLING")}
@@ -227,7 +244,7 @@ export default function Login() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-auto min-h-16 flex-col gap-1 whitespace-normal"
+                    className="h-auto min-h-16 flex-col gap-1 whitespace-normal py-2"
                     aria-label="Read only"
                     disabled={pending !== null}
                     onClick={() => void demo("READ_ONLY")}
@@ -244,7 +261,7 @@ export default function Login() {
                 </p>
                 <Button
                   variant="link"
-                  className="mt-2 h-auto p-0"
+                  className="mt-2 h-auto min-h-0 p-0"
                   onClick={() => setResetOpen(true)}
                 >
                   Reset Demo Data
@@ -253,9 +270,8 @@ export default function Login() {
             )}
           </CardContent>
         </Card>
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Single outlet <span className="px-1">&middot;</span> Counter
-          operations
+        <p className="mt-5 text-center text-xs text-muted-foreground">
+          Single outlet <span className="px-1">&middot;</span> Counter operations
         </p>
       </div>
       {dataMode === "mock" && (

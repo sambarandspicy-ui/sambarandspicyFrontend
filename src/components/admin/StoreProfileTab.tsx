@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { FormField } from "@/components/shared/form-field";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -76,31 +77,22 @@ export function StoreProfileTab({
             </div>
           </div>
           <form
-            className="space-y-4 p-5 [&_label]:block [&_label]:text-sm [&_label]:font-semibold [&_label_input:not([type=checkbox])]:mt-2 [&_label_select]:mt-2 [&_label_textarea]:mt-2"
+            className="space-y-4 p-5"
             onSubmit={(e) => void handleSubmit(save)(e)}
           >
-            <fieldset disabled={!admin || pending}>
-              <label>
-                Store name
-                <Input maxLength={120} {...register("store_name")} />
-              </label>
-              {errors.store_name && (
-                <p className="text-sm text-destructive">
-                  {errors.store_name.message}
-                </p>
-              )}
-              <label>
-                Store address
-                <Textarea maxLength={500} {...register("address")} />
-              </label>
-              <label>
-                Phone number
-                <Input maxLength={25} {...register("phone")} />
-              </label>
-              <label>
-                Receipt footer
-                <Input maxLength={255} {...register("receipt_footer")} />
-              </label>
+            <fieldset disabled={!admin || pending} className="space-y-4">
+              <FormField label="Store name" htmlFor="store-name" error={errors.store_name?.message} required>
+                <Input id="store-name" maxLength={120} error={!!errors.store_name} {...register("store_name")} />
+              </FormField>
+              <FormField label="Store address" htmlFor="store-address">
+                <Textarea id="store-address" maxLength={500} {...register("address")} />
+              </FormField>
+              <FormField label="Phone number" htmlFor="store-phone">
+                <Input id="store-phone" maxLength={25} inputMode="tel" {...register("phone")} />
+              </FormField>
+              <FormField label="Receipt footer" htmlFor="store-footer">
+                <Input id="store-footer" maxLength={255} {...register("receipt_footer")} />
+              </FormField>
             </fieldset>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground [&_span]:rounded-lg [&_span]:bg-muted [&_span]:px-3 [&_span]:py-2">
               <span>Currency: {settings.currency_code}</span>
@@ -115,8 +107,8 @@ export function StoreProfileTab({
               <Button
                 variant="default"
                 type="submit"
-                className="min-h-11"
-                disabled={pending}
+                className="min-h-11 sm:min-h-10"
+                loading={pending}
               >
                 {pending ? "Saving..." : "Save store details"}
               </Button>

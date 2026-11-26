@@ -28,9 +28,10 @@ export function ChoiceMenu<T extends string>({
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
+          className="max-w-full justify-between"
           aria-label={`${label}: ${selected?.label ?? value}`}
         >
-          <span>{selected?.label ?? value}</span>
+          <span className="truncate">{selected?.label ?? value}</span>
           <ChevronDown size={16} aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>

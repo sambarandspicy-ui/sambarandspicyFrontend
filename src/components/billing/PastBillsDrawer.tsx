@@ -2,22 +2,24 @@
 import { useMemo, useState } from "react";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
-  SheetTitle,
   SheetDescription,
-  SheetClose,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { Search } from "lucide-react";
 import { QueryError } from "@/components/shared/QueryState";
 import { useBills, type BillFilters } from "@/hooks/queries";
 import { useBillingSync } from "@/hooks/useBillingSync";
 import { getBusinessDateIST, formatINR } from "@/lib/format";
 import type { BillDetail } from "@/types/domain";
+
 function initialFilters(): BillFilters {
   const to = getBusinessDateIST(),
     date = new Date(`${to}T00:00:00Z`);
@@ -29,6 +31,7 @@ function initialFilters(): BillFilters {
     paymentMethod: "ALL",
   };
 }
+
 export function PastBillsDrawer({
   open,
   onOpenChange,
@@ -83,28 +86,19 @@ export function PastBillsDrawer({
       ),
     );
   }, [bills.data, queuedBills, filters]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right">
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border p-5 pr-12 [&_h2]:text-lg [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-          <div>
-            <SheetTitle>Past Bills</SheetTitle>
-            <SheetDescription>
-              Find paid or cancelled bills by business date.
-            </SheetDescription>
-          </div>
-          <SheetClose asChild>
-            <Button
-              variant="outline"
-              className="size-11 p-0"
-              aria-label="Close past bills"
-            >
-              <X size={19} />
-            </Button>
-          </SheetClose>
-        </div>
-        <div className="grid grid-cols-2 gap-3 border-b border-border p-4 text-sm [&_label]:space-y-1">
-          <label>
+        <SheetHeader>
+          <SheetTitle className="text-lg font-bold">Past Bills</SheetTitle>
+          <SheetDescription className="text-sm text-muted-foreground">
+            Find paid or cancelled bills by business date.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="grid shrink-0 grid-cols-1 gap-2.5 border-b border-border bg-secondary/40 px-5 py-4 text-sm min-[360px]:grid-cols-2 sm:px-6 [&_label]:space-y-1 [&_label]:font-medium">
+          <label className="min-w-0">
             From
             <Input
               type="date"
@@ -112,7 +106,7 @@ export function PastBillsDrawer({
               onChange={(e) => setFilters({ ...filters, from: e.target.value })}
             />
           </label>
-          <label>
+          <label className="min-w-0">
             To
             <Input
               type="date"
@@ -120,17 +114,19 @@ export function PastBillsDrawer({
               onChange={(e) => setFilters({ ...filters, to: e.target.value })}
             />
           </label>
-          <label className="col-span-2">
+          <label className="min-w-0 min-[360px]:col-span-2">
             Bill number
             <Input
               placeholder="Search bill number"
               value={filters.search}
-              onChange={(e) =>
-                setFilters({ ...filters, search: e.target.value })
-              }
+              leadingIcon={<Search size={16} />}
+              clearable
+              clearLabel="Clear bill search"
+              onClear={() => setFilters({ ...filters, search: "" })}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             />
           </label>
-          <label>
+          <label className="min-w-0 min-[360px]:col-span-2">
             Payment
             <NativeSelect
               value={filters.paymentMethod}
@@ -148,12 +144,13 @@ export function PastBillsDrawer({
             </NativeSelect>
           </label>
         </div>
+
         {filters.from && filters.to && filters.from > filters.to ? (
-          <p className="p-4 text-sm text-destructive">
+          <p className="p-4 text-sm font-medium text-destructive" role="alert">
             From date must be on or before To date.
           </p>
         ) : (
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+          <SheetBody className="space-y-3 p-4 sm:p-4">
             {bills.isLoading && !mergedBills.length ? (
               <p className="flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
                 Loading bills...
@@ -169,7 +166,6 @@ export function PastBillsDrawer({
                 <p>No bills found for these filters.</p>
                 <Button
                   variant="outline"
-                  className="min-h-11"
                   onClick={() => setFilters(initialFilters())}
                 >
                   Reset filters
@@ -178,12 +174,14 @@ export function PastBillsDrawer({
             ) : (
               <>
                 {bills.isError && (
-                  <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    <span>Showing offline queued bills; server history unavailable.</span>
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/70 dark:text-amber-200">
+                    <span>
+                      Showing offline queued bills; server history unavailable.
+                    </span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-xs"
+                      className="min-h-8 px-2 text-xs"
                       onClick={() => void bills.refetch()}
                     >
                       Retry
@@ -193,89 +191,94 @@ export function PastBillsDrawer({
                 {mergedBills.map((b) => {
                   const clientId = b.clientBillId ?? b.client_bill_id;
                   return (
-                <article key={clientId ?? b.id}>
-                  <Card className="rounded-xl border border-border bg-card p-4 text-sm">
-                    <div className="flex justify-between gap-3 [&_p]:mt-1 [&_p]:text-xs [&_p]:text-muted-foreground">
-                      <div>
-                        <strong>
-                          {b.bill_number ?? `Cancelled hold #${b.id}`}
-                        </strong>
-                        <p>
-                          {new Intl.DateTimeFormat("en-IN", {
-                            timeZone: "Asia/Kolkata",
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          }).format(
-                            new Date(
-                              b.paid_at ?? b.cancelled_at ?? b.created_at,
-                            ),
-                          )}{" "}
-                          IST
+                    <article key={clientId ?? b.id}>
+                      <Card className="p-4 text-sm">
+                        <div className="flex justify-between gap-3 [&_p]:mt-1 [&_p]:text-xs [&_p]:text-muted-foreground">
+                          <div className="min-w-0">
+                            <strong className="block truncate">
+                              {b.bill_number ?? `Cancelled hold #${b.id}`}
+                            </strong>
+                            <p>
+                              {new Intl.DateTimeFormat("en-IN", {
+                                timeZone: "Asia/Kolkata",
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              }).format(
+                                new Date(
+                                  b.paid_at ?? b.cancelled_at ?? b.created_at,
+                                ),
+                              )}{" "}
+                              IST
+                            </p>
+                          </div>
+                          <strong className="shrink-0 tabular-nums text-primary dark:text-[#ebc96f]">
+                            {formatINR(b.total_amount)}
+                          </strong>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {b.cashier_name ?? `User #${b.paid_by ?? b.created_by}`}{" "}
+                          &middot; {b.item_count} items
                         </p>
-                      </div>
-                      <strong>{formatINR(b.total_amount)}</strong>
-                    </div>
-                    <p>
-                      {b.cashier_name ?? `User #${b.paid_by ?? b.created_by}`}{" "}
-                      &middot; {b.item_count} items
-                    </p>
-                    {b.syncStatus === "FAILED" && b.syncError && (
-                      <p className="mt-1 text-xs text-destructive" role="alert">
-                        {b.syncError}
-                      </p>
-                    )}
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary">{b.status}</Badge>
-                      {b.payment && (
-                        <Badge variant="secondary">
-                          {b.payment.payment_method}
-                        </Badge>
-                      )}
-                      {b.syncStatus && b.syncStatus !== "SYNCED" && (
-                        <Badge
-                          variant={b.syncStatus === "FAILED" ? "destructive" : "outline"}
-                          title={b.syncError ?? undefined}
-                        >
-                          {b.syncStatus === "FAILED"
-                            ? "Sync failed"
-                            : b.syncStatus === "SYNCING"
-                              ? "Syncing"
-                              : "Pending sync"}
-                        </Badge>
-                      )}
-                      {b.syncStatus === "FAILED" && clientId && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="min-h-11"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void retryBill(clientId);
-                          }}
-                        >
-                          Retry
-                        </Button>
-                      )}
-                      {b.status === "PAID" && (
-                        <Button
-                          variant="outline"
-                          className="min-h-11"
-                          onClick={() => {
-                            onOpenChange(false);
-                            onReceipt(b);
-                          }}
-                        >
-                          Print receipt
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-                </article>
+                        {b.syncStatus === "FAILED" && b.syncError && (
+                          <p className="mt-1 text-xs text-destructive" role="alert">
+                            {b.syncError}
+                          </p>
+                        )}
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">{b.status}</Badge>
+                          {b.payment && (
+                            <Badge variant="secondary">
+                              {b.payment.payment_method}
+                            </Badge>
+                          )}
+                          {b.syncStatus && b.syncStatus !== "SYNCED" && (
+                            <Badge
+                              variant={
+                                b.syncStatus === "FAILED"
+                                  ? "destructive"
+                                  : "warning"
+                              }
+                              title={b.syncError ?? undefined}
+                            >
+                              {b.syncStatus === "FAILED"
+                                ? "Sync failed"
+                                : b.syncStatus === "SYNCING"
+                                  ? "Syncing"
+                                  : "Pending sync"}
+                            </Badge>
+                          )}
+                          {b.syncStatus === "FAILED" && clientId && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void retryBill(clientId);
+                              }}
+                            >
+                              Retry
+                            </Button>
+                          )}
+                          {b.status === "PAID" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                onOpenChange(false);
+                                onReceipt(b);
+                              }}
+                            >
+                              Print receipt
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    </article>
                   );
                 })}
               </>
             )}
-          </div>
+          </SheetBody>
         )}
       </SheetContent>
     </Sheet>

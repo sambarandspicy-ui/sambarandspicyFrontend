@@ -2,6 +2,7 @@
 import { useState } from "react";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
@@ -16,6 +17,7 @@ import { FormField } from "@/components/shared/form-field";
 import { Alert } from "@/components/ui/alert";
 import type { BillingCart } from "@/hooks/useBillingCart";
 import type { BillInput } from "@/services/api/types";
+
 export function HoldBillDialog({
   open,
   onOpenChange,
@@ -32,6 +34,7 @@ export function HoldBillDialog({
   const [label, setLabel] = useState(cart.state.holdLabel);
   const [note, setNote] = useState(cart.state.note);
   const [error, setError] = useState("");
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -52,6 +55,7 @@ export function HoldBillDialog({
       setError(e instanceof Error ? e.message : "Could not hold this bill.");
     }
   }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -63,35 +67,40 @@ export function HoldBillDialog({
             Save the order to resume it at the counter later.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="mt-5 space-y-4">
-          <FormField label="Hold label" htmlFor="hold-label">
-            <Input
-              id="hold-label"
-              maxLength={80}
-              placeholder="e.g., Counter #2 - Parcel"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-            />
-          </FormField>
-          <FormField label="Note" htmlFor="hold-note">
-            <Textarea
-              id="hold-note"
-              maxLength={255}
-              placeholder="Add a note for later"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </FormField>
-          {error && (
-            <Alert variant="destructive" role="alert">
-              {error}
-            </Alert>
-          )}
+        <form onSubmit={submit} className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+          <DialogBody className="space-y-4">
+            <FormField label="Hold label" htmlFor="hold-label">
+              <Input
+                id="hold-label"
+                maxLength={80}
+                placeholder="e.g., Counter #2 - Parcel"
+                value={label}
+                clearable
+                clearLabel="Clear hold label"
+                onClear={() => setLabel("")}
+                onChange={(e) => setLabel(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Note" htmlFor="hold-note">
+              <Textarea
+                id="hold-note"
+                maxLength={255}
+                placeholder="Add a note for later"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </FormField>
+            {error && (
+              <Alert variant="destructive" role="alert">
+                {error}
+              </Alert>
+            )}
+          </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Back</Button>
+              <Button type="button" variant="outline">Back</Button>
             </DialogClose>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" loading={pending}>
               {pending ? "Saving..." : "Save held bill"}
             </Button>
           </DialogFooter>

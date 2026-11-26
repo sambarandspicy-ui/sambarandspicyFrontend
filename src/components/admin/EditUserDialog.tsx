@@ -1,13 +1,18 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/shared/form-field";
 
 import { useState } from "react";
+import { AtSign, User as UserIcon } from "lucide-react";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
 } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -68,42 +73,34 @@ export function EditUserDialog({
       }}
     >
       <DialogContent>
-        <DialogTitle>Edit user details</DialogTitle>
-        <DialogDescription>
-          Update the {user.role.replace("_", " ")} account.
-        </DialogDescription>
+        <DialogHeader>
+          <DialogTitle>Edit user details</DialogTitle>
+          <DialogDescription>
+            Update the {user.role.replace("_", " ")} account.
+          </DialogDescription>
+        </DialogHeader>
         <form
-          className="space-y-4 p-5 [&_label]:block [&_label]:text-sm [&_label]:font-semibold [&_label_input:not([type=checkbox])]:mt-2 [&_label_select]:mt-2 [&_label_textarea]:mt-2"
+          className="flex min-h-0 w-full flex-1 flex-col overflow-hidden"
           onSubmit={(e) => void handleSubmit(save)(e)}
         >
-          <label>
-            Full name
-            <Input maxLength={120} {...register("full_name")} />
-          </label>
-          {errors.full_name && (
-            <p className="text-sm text-destructive">
-              {errors.full_name.message}
-            </p>
-          )}
-          <label>
-            Username
-            <Input maxLength={80} {...register("username")} />
-          </label>
-          {errors.username && (
-            <p className="text-sm text-destructive" role="alert">
-              {errors.username.message}
-            </p>
-          )}
-          {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+          <DialogBody className="space-y-4">
+            <FormField label="Full name" htmlFor="edit-user-fullname" error={errors.full_name?.message} required>
+              <Input id="edit-user-fullname" maxLength={120} leadingIcon={<UserIcon size={16} />} error={!!errors.full_name} {...register("full_name")} />
+            </FormField>
+            <FormField label="Username" htmlFor="edit-user-username" error={errors.username?.message} required>
+              <Input id="edit-user-username" maxLength={80} leadingIcon={<AtSign size={16} />} error={!!errors.username} {...register("username")} />
+            </FormField>
+            {error && (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            )}
+          </DialogBody>
+          <DialogFooter>
             <Button
               variant="outline"
               type="button"
-              className="min-h-11"
+              className="min-h-11 sm:min-h-10"
               onClick={onClose}
             >
               Cancel
@@ -111,12 +108,12 @@ export function EditUserDialog({
             <Button
               variant="default"
               type="submit"
-              className="min-h-11"
-              disabled={pending}
+              className="min-h-11 sm:min-h-10"
+              loading={pending}
             >
               Save details
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

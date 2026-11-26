@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { Search, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+
 export function MenuSearchBar({
   value,
   onChange,
@@ -11,6 +11,7 @@ export function MenuSearchBar({
   onChange: (value: string) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     function key(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
@@ -30,35 +31,28 @@ export function MenuSearchBar({
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
+
   return (
-    <div className="relative min-w-0 flex-1">
-      <Search
-        className="absolute top-3 left-3 text-muted-foreground"
-        size={19}
-        aria-hidden="true"
-      />
+    <div className="min-w-0 flex-1">
       <Input
         ref={input}
-        className="h-11 pr-10 pl-10 sm:pr-20"
+        containerClassName="h-11 sm:h-10 rounded-xl shadow-2xs"
         aria-label="Search menu items"
         placeholder="Search dishes..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        leadingIcon={<Search size={17} />}
+        clearable
+        clearLabel="Clear search"
+        onClear={() => onChange("")}
+        trailingIcon={
+          !value ? (
+            <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-flex">
+              /
+            </kbd>
+          ) : undefined
+        }
       />
-      {value && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-0 right-0 sm:right-8"
-          aria-label="Clear search"
-          onClick={() => onChange("")}
-        >
-          <X size={18} />
-        </Button>
-      )}
-      <kbd className="absolute top-3 right-3 hidden text-xs text-muted-foreground sm:block">
-        /
-      </kbd>
     </div>
   );
 }
