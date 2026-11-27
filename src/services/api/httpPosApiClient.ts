@@ -403,13 +403,19 @@ export class HttpPosApiClient implements PosApiClient {
     const bills = await this.request<WireBillDetail[]>(`/bills${query(range)}`);
     return bills.map(mapBillDetail);
   }
-  async cancelHeldBill(id: number, reason: string) {
+  async cancelBill(id: number, reason: string) {
     return mapBillDetail(
       await this.request<WireBillDetail>(`/bills/${id}/cancel`, {
         method: "POST",
         body: { reason },
       }),
     );
+  }
+  async cancelHeldBill(id: number, reason: string) {
+    return this.cancelBill(id, reason);
+  }
+  async deleteBill(id: number) {
+    return this.request<void>(`/bills/${id}`, { method: "DELETE" });
   }
   async checkoutBill(input: CheckoutInput) {
     // The server deduplicates this key. A lost response may mean the payment

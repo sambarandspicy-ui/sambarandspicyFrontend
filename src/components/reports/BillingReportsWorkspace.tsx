@@ -26,9 +26,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { QueryError, QuerySkeleton } from "@/components/shared/QueryState";
 import { ReceiptDialog } from "@/components/billing/ReceiptDialog";
+import { CancelBillDialog } from "@/components/billing/CancelBillDialog";
+import { DeleteBillDialog } from "@/components/billing/DeleteBillDialog";
+import { Toast } from "@/components/ui/toast";
 import { useAuth } from "@/providers/auth-provider";
 import { api } from "@/services/api";
-import { queryKeys } from "@/hooks/queries";
+import { queryKeys, useCancelPaidBill, useDeleteBill } from "@/hooks/queries";
 import { formatINR, getBusinessDateIST, resolvePeriodRange } from "@/lib/format";
 import type { BillDetail, ReportPeriod } from "@/types/domain";
 import { buildBillingReport } from "./billingReportData";
@@ -49,8 +52,13 @@ export function BillingReportsWorkspace() {
   const [period, setPeriod] = useState<ReportPeriod>("MONTHLY");
   const [anchor, setAnchor] = useState(getBusinessDateIST);
   const [receipt, setReceipt] = useState<BillDetail | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<BillDetail | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BillDetail | null>(null);
+  const [notice, setNotice] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+  const cancelPaidBill = useCancelPaidBill();
+  const deleteBill = useDeleteBill();
   const range = resolvePeriodRange(period, anchor);
   const bills = useQuery({
     queryKey: [...queryKeys.bills, "report", range],
@@ -302,6 +310,26 @@ export function BillingReportsWorkspace() {
                       >
                         View receipt
                       </Button>
+                      {user?.role === "ADMIN" && bill.id > 0 && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setCancelTarget(bill)}
+                          >
+                            Cancel bill
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setDeleteTarget(bill)}
+                          >
+                            Delete bill
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -341,6 +369,52 @@ export function BillingReportsWorkspace() {
         onLogReprint={(id) => api.logBillReprint(id)}
         preview
       />
+
+      {user.role === "ADMIN" && (
+        <>
+          <CancelBillDialog
+            key={cancelTarget?.id ?? "report-paid-none"}
+            bill={cancelTarget}
+            open={!!cancelTarget}
+            onOpenChange={(open) => {
+              if (!open) setCancelTarget(null);
+            }}
+            title={
+              cancelTarget?.bill_number
+                ? `Cancel bill ${cancelTarget.bill_number}?`
+                : "Cancel paid bill?"
+            }
+            description="This marks the completed bill as cancelled and removes it from sales totals. A reason is required."
+            pending={cancelPaidBill.isPending}
+            onCancel={async (id, reason) => {
+              const cancelled = await cancelPaidBill.mutateAsync({ id, reason });
+              setCancelTarget(null);
+              setNotice(
+                `Bill ${cancelled.bill_number ?? `#${cancelled.id}`} cancelled.`,
+              );
+            }}
+          />
+          <DeleteBillDialog
+            key={deleteTarget?.id ?? "report-delete-none"}
+            bill={deleteTarget}
+            open={!!deleteTarget}
+            onOpenChange={(open) => {
+              if (!open) setDeleteTarget(null);
+            }}
+            pending={deleteBill.isPending}
+            onDelete={async (id) => {
+              const deleted = deleteTarget!;
+              await deleteBill.mutateAsync(id);
+              setDeleteTarget(null);
+              setNotice(
+                `Bill ${deleted.bill_number ?? `#${deleted.id}`} deleted.`,
+              );
+            }}
+          />
+        </>
+      )}
+
+      {notice && <Toast message={notice} onDismiss={() => setNotice("")} />}
     </div>
   );
 }

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Eye, History, Search } from "lucide-react";
 import {
   Dialog,
   DialogBody,
@@ -25,6 +25,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { FormField } from "@/components/shared/form-field";
+import { IconActionButton } from "@/components/ui/tooltip";
 import type { AuditLog, User } from "@/types/domain";
 import { getBusinessDateIST } from "@/lib/format";
 import { dateTime } from "@/components/inventory/shared";
@@ -54,16 +56,23 @@ export function AuditHistoryTab({
     .sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id - a.id);
   return (
     <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
-      <div className="flex items-start justify-between gap-3 border-b border-border p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
-        <div>
-          <h2>Audit history</h2>
-          <p>Read-only record of administrative activity.</p>
+      <div className="flex items-start justify-between gap-3 border-b border-border p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary dark:text-[#ebc96f]">
+            <History size={18} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="font-bold">Audit history ({rows.length})</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Read-only record of administrative activity.
+            </p>
+          </div>
         </div>
       </div>
-      <div className="grid gap-3 border-b border-border p-5 sm:grid-cols-2 lg:grid-cols-3 [&_label]:text-sm [&_label]:font-semibold [&_input]:mt-2 [&_select]:mt-2">
-        <label>
-          Entity type
+      <div className="grid grid-cols-1 gap-3 border-b border-border p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
+        <FormField label="Entity type" htmlFor="audit-filter-entity" className="min-w-0">
           <NativeSelect
+            id="audit-filter-entity"
             value={entity}
             onChange={(e) => setEntity(e.target.value)}
           >
@@ -82,10 +91,10 @@ export function AuditHistoryTab({
               </option>
             ))}
           </NativeSelect>
-        </label>
-        <label>
-          Search
+        </FormField>
+        <FormField label="Search" htmlFor="audit-filter-search" className="min-w-0">
           <Input
+            id="audit-filter-search"
             placeholder="Action, entity ID, or actor"
             leadingIcon={<Search size={16} />}
             clearable
@@ -93,15 +102,15 @@ export function AuditHistoryTab({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </label>
-        <label>
-          Business date (IST)
+        </FormField>
+        <FormField label="Business date (IST)" htmlFor="audit-filter-date" className="min-w-0">
           <Input
+            id="audit-filter-date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
-        </label>
+        </FormField>
       </div>
       <div className="space-y-3 p-4 md:hidden">
         {rows.map((x) => {
@@ -113,9 +122,14 @@ export function AuditHistoryTab({
                   <Badge variant="outline" className="text-[11px]">{x.entity_type.toUpperCase()} #{x.entity_id ?? "-"}</Badge>
                   <p className="mt-1.5 font-semibold text-sm">{x.action}</p>
                 </div>
-                <Button variant="outline" size="sm" className="min-h-10 shrink-0" onClick={() => setInspect(x)}>
-                  Inspect
-                </Button>
+                <IconActionButton
+                  icon={<Eye size={15} />}
+                  label={`Inspect audit entry ${x.action}`}
+                  tooltip="View audit details"
+                  mobileLabel="Inspect"
+                  showLabelOnMobile
+                  onClick={() => setInspect(x)}
+                />
               </div>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
                 <span>{actor?.full_name ?? "System"} ({actor?.role ?? "SYSTEM"})</span>
@@ -151,13 +165,12 @@ export function AuditHistoryTab({
                     {x.entity_type.toUpperCase()} #{x.entity_id ?? "-"}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      className="min-h-11"
+                    <IconActionButton
+                      icon={<Eye size={15} />}
+                      label={`Inspect audit entry ${x.action}`}
+                      tooltip="View audit details"
                       onClick={() => setInspect(x)}
-                    >
-                      Inspect
-                    </Button>
+                    />
                   </TableCell>
                 </TableRow>
               );

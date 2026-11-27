@@ -30,6 +30,7 @@ import { HeldBillsDrawer } from "./HeldBillsDrawer";
 import { CheckoutDialog } from "./CheckoutDialog";
 import { ReceiptDialog } from "./ReceiptDialog";
 import { PastBillsDrawer } from "./PastBillsDrawer";
+import { CancelBillDialog } from "./CancelBillDialog";
 
 export function BillingWorkspace({
   simulatePostCheckoutFailure,
@@ -57,6 +58,9 @@ export function BillingWorkspace({
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptBill, setReceiptBill] = useState<BillDetail | null>(null);
   const [lastCompletedBill, setLastCompletedBill] = useState<BillDetail | null>(
+    null,
+  );
+  const [cancelPaidTarget, setCancelPaidTarget] = useState<BillDetail | null>(
     null,
   );
   const [isReprint, setIsReprint] = useState(false);
@@ -179,6 +183,22 @@ export function BillingWorkspace({
 
   const heldCount = billing.held.data?.length ?? 0;
 
+  function handlePaidBillCancelled(cancelled: BillDetail) {
+    setLastCompletedBill((prev) =>
+      prev?.id === cancelled.id ? cancelled : prev,
+    );
+    setReceiptBill((prev) => (prev?.id === cancelled.id ? cancelled : prev));
+    setNotice(
+      `Bill ${cancelled.bill_number ?? `#${cancelled.id}`} cancelled.`,
+    );
+  }
+
+  function handleBillDeleted(deleted: BillDetail) {
+    setLastCompletedBill((prev) => (prev?.id === deleted.id ? null : prev));
+    setReceiptBill((prev) => (prev?.id === deleted.id ? null : prev));
+    setNotice(`Bill ${deleted.bill_number ?? `#${deleted.id}`} deleted.`);
+  }
+
   const headerActions = (
     <BillingHeaderBar
       role={user.role}
@@ -186,12 +206,29 @@ export function BillingWorkspace({
         setCartSheetOpen(false);
         setPastOpen(true);
       }}
-      lastBillNumber={lastCompletedBill?.bill_number ?? null}
+      lastBillNumber={
+        lastCompletedBill?.status === "PAID"
+          ? (lastCompletedBill.bill_number ?? null)
+          : null
+      }
       onLastReceipt={() => {
         setCartSheetOpen(false);
         setReceiptBill(lastCompletedBill);
         setIsReprint(true);
         setReceiptOpen(true);
+      }}
+      canCancelLastBill={Boolean(
+        canEdit &&
+          lastCompletedBill &&
+          lastCompletedBill.status === "PAID" &&
+          lastCompletedBill.id > 0 &&
+          (!lastCompletedBill.syncStatus ||
+            lastCompletedBill.syncStatus === "SYNCED"),
+      )}
+      onCancelLastBill={() => {
+        if (!lastCompletedBill) return;
+        setCartSheetOpen(false);
+        setCancelPaidTarget(lastCompletedBill);
       }}
     />
   );
@@ -420,10 +457,39 @@ export function BillingWorkspace({
         <PastBillsDrawer
           open={pastOpen}
           onOpenChange={setPastOpen}
+          canEdit={canEdit}
+          onBillCancelled={handlePaidBillCancelled}
+          onBillDeleted={handleBillDeleted}
           onReceipt={(bill) => {
             setReceiptBill(bill);
             setIsReprint(true);
             setReceiptOpen(true);
+          }}
+        />
+      )}
+
+      {canEdit && (
+        <CancelBillDialog
+          key={cancelPaidTarget?.id ?? "last-paid-none"}
+          bill={cancelPaidTarget}
+          open={!!cancelPaidTarget}
+          onOpenChange={(v) => {
+            if (!v) setCancelPaidTarget(null);
+          }}
+          title={
+            cancelPaidTarget?.bill_number
+              ? `Cancel bill ${cancelPaidTarget.bill_number}?`
+              : "Cancel paid bill?"
+          }
+          description="This marks the completed bill as cancelled and removes it from sales totals. A reason is required."
+          pending={billing.cancelPaid.isPending}
+          onCancel={async (id, reason) => {
+            const cancelled = await billing.cancelPaid.mutateAsync({
+              id,
+              reason,
+            });
+            setCancelPaidTarget(null);
+            handlePaidBillCancelled(cancelled);
           }}
         />
       )}

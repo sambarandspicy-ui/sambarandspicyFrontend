@@ -6,11 +6,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUp,
   BookOpen,
+  ExternalLink,
   LayoutGrid,
   List,
   MapPin,
   Maximize,
   Minimize,
+  Phone,
   Search,
   Sparkles,
   UtensilsCrossed,
@@ -424,11 +426,29 @@ export function CustomerMenu() {
               Good food. <span className="text-[#ebc96f]">Great moments.</span>
             </h1>
             <div className="mt-2.5 flex flex-wrap items-center gap-2 sm:mt-3">
-              {data?.store.address && (
-                <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#ebc96f]/30 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-[#f5eed8] backdrop-blur-xs sm:text-xs">
-                  <MapPin size={12} className="shrink-0 text-[#ebc96f]" aria-hidden="true" />
-                  <span className="truncate">{data.store.address}</span>
-                </span>
+              {data?.store.address?.trim() && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    `${data.store.name ? `${data.store.name}, ` : ""}${data.store.address.trim()}`,
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${data.store.address.trim()} in Google Maps`}
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#ebc96f]/45 bg-white/10 px-3 py-1 text-xs font-semibold text-[#fff7dc] shadow-xs backdrop-blur-xs transition-colors hover:border-[#ebc96f]/75 hover:bg-[#ebc96f]/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ebc96f] sm:text-sm"
+                >
+                  <MapPin size={13} className="shrink-0 text-[#ebc96f]" aria-hidden="true" />
+                  <span className="truncate font-bold">{data.store.address.trim()}</span>
+                  <ExternalLink size={11} className="shrink-0 text-[#ebc96f]/90" aria-hidden="true" />
+                </a>
+              )}
+              {data?.store.phone?.trim() && (
+                <a
+                  href={`tel:${data.store.phone.replace(/[^\d+]/g, "")}`}
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#ebc96f]/55 bg-[#ebc96f]/15 px-3 py-1 text-xs font-bold tracking-wide text-[#fff7dc] shadow-xs backdrop-blur-xs transition-colors hover:bg-[#ebc96f]/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ebc96f] sm:text-sm"
+                >
+                  <Phone size={13} className="shrink-0 text-[#ebc96f]" aria-hidden="true" />
+                  <strong className="font-bold tabular-nums">{data.store.phone}</strong>
+                </a>
               )}
               <span className="inline-flex items-center rounded-full border border-white/15 bg-black/20 px-2.5 py-1 text-[11px] font-medium text-[#e3e7d5] sm:text-xs">
                 Freshly prepared · Ask our team to order

@@ -316,9 +316,62 @@ export function useCatalog() {
   };
 }
 
+export function useCancelPaidBill() {
+  const client = useQueryClient();
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      api.cancelBill(id, reason),
+    onSuccess: (updated) => {
+      for (const [key, data] of client.getQueriesData<BillDetail[]>({
+        queryKey: queryKeys.bills,
+      })) {
+        if (!Array.isArray(data)) continue;
+        client.setQueryData<BillDetail[]>(
+          key,
+          data.map((b) => (b.id === updated.id ? updated : b)),
+        );
+      }
+      refresh(
+        queryKeys.bills,
+        queryKeys.daily,
+        queryKeys.reports,
+        queryKeys.audits,
+      );
+    },
+  });
+}
+
+export function useDeleteBill() {
+  const client = useQueryClient();
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: (id: number) => api.deleteBill(id),
+    onSuccess: (_void, id) => {
+      for (const [key, data] of client.getQueriesData<BillDetail[]>({
+        queryKey: queryKeys.bills,
+      })) {
+        if (!Array.isArray(data)) continue;
+        client.setQueryData<BillDetail[]>(
+          key,
+          data.filter((b) => b.id !== id),
+        );
+      }
+      refresh(
+        queryKeys.bills,
+        queryKeys.daily,
+        queryKeys.reports,
+        queryKeys.audits,
+      );
+    },
+  });
+}
+
 export function useBilling() {
   const client = useQueryClient();
   const refresh = useRefresh();
+  const cancelPaid = useCancelPaidBill();
+  const deleteBill = useDeleteBill();
   const done = () => refresh(queryKeys.bills, queryKeys.reports, queryKeys.audits);
   const heldKey = [...queryKeys.bills, "held"] as const;
 
@@ -399,6 +452,8 @@ export function useBilling() {
       },
       onSuccess: done,
     }),
+    cancelPaid,
+    deleteBill,
     reprint: useMutation({
       mutationFn: (id: number) => api.logBillReprint(id),
       onSuccess: done,

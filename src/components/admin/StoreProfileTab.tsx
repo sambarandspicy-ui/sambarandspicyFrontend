@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus } from "lucide-react";
+import { Plus, ShieldCheck, Store, UtensilsCrossed } from "lucide-react";
 import type { Category, MenuItem, StoreSettings, User } from "@/types/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
 const schema = z.object({
@@ -70,10 +70,15 @@ export function StoreProfileTab({
     <>
       <div className="grid gap-5 xl:grid-cols-[7fr_5fr]">
         <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
-          <div className="flex items-start justify-between gap-3 border-b border-border p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+          <div className="flex items-start gap-3 border-b border-border p-5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary dark:text-[#ebc96f]">
+              <Store size={18} aria-hidden="true" />
+            </span>
             <div>
-              <h2>Store identity</h2>
-              <p>Details used throughout the workspace and on receipts.</p>
+              <h2 className="font-bold">Store identity</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Details used throughout the workspace and on receipts.
+              </p>
             </div>
           </div>
           <form
@@ -117,10 +122,13 @@ export function StoreProfileTab({
         </Card>
         <div className="grid gap-5">
           <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
-            <div className="flex items-start justify-between gap-3 border-b border-border p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+            <div className="flex items-start gap-3 border-b border-border p-5">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary dark:text-[#ebc96f]">
+                <ShieldCheck size={18} aria-hidden="true" />
+              </span>
               <div>
-                <h2>Fixed system accounts (3 of 3)</h2>
-                <p>
+                <h2 className="font-bold">Fixed system accounts (3 of 3)</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
                   Exactly one account for each role; no open signup or fourth
                   user slot.
                 </p>
@@ -163,10 +171,15 @@ export function StoreProfileTab({
             </div>
           </Card>
           <Card className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
-            <div className="flex items-start justify-between gap-3 border-b border-border p-5 [&_h2]:font-bold [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted-foreground">
+            <div className="flex items-start gap-3 border-b border-border p-5">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary dark:text-[#ebc96f]">
+                <UtensilsCrossed size={18} aria-hidden="true" />
+              </span>
               <div>
-                <h2>Menu management</h2>
-                <p>Catalog available for counter billing.</p>
+                <h2 className="font-bold">Menu management</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Catalog available for counter billing.
+                </p>
               </div>
             </div>
             <div className="space-y-3 p-5 text-sm [&>div]:flex [&>div]:justify-between [&_p]:text-muted-foreground">

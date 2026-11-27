@@ -41,6 +41,15 @@ async function main() {
   render(<QueryClientProvider client={client}><CustomerMenu /></QueryClientProvider>);
   await screen.findByRole("heading", { name: "Find your favourite" });
   await screen.findByRole("button", { name: "All dishes" });
+  if (publicMenu.store.address?.trim()) {
+    const mapLink = screen.getByRole("link", { name: new RegExp(publicMenu.store.address.trim()) });
+    assert.ok(mapLink.getAttribute("href")?.startsWith("https://www.google.com/maps/search/?api=1&query="));
+    assert.equal(mapLink.getAttribute("target"), "_blank");
+  }
+  if (publicMenu.store.phone) {
+    const phoneEl = screen.getByText(publicMenu.store.phone);
+    assert.ok(phoneEl.tagName === "STRONG" || phoneEl.className.includes("font-bold"));
+  }
   fireEvent.click(screen.getByRole("button", { name: "View full screen" }));
   await screen.findByRole("button", { name: "Exit full screen" });
   fireEvent.click(screen.getByRole("button", { name: "Exit full screen" }));

@@ -1,5 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import {
+  History,
+  Layers,
+  QrCode,
+  Store,
+  Users,
+  UtensilsCrossed,
+} from "lucide-react";
 import { Toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
@@ -26,19 +34,65 @@ type Tab = "profile" | "categories" | "menu" | "customer-menu" | "users" | "audi
 type Confirm =
   | { kind: "category"; value: Category }
   | { kind: "menu"; value: MenuItem }
-  | { kind: "user"; value: User };
-const tabs: { id: Tab; label: string; adminOnly?: boolean }[] = [
-  { id: "profile", label: "Store profile" },
-  { id: "categories", label: "Categories" },
-  { id: "menu", label: "Menu items" },
-  { id: "customer-menu", label: "Customer menu", adminOnly: true },
-  { id: "users", label: "User access", adminOnly: true },
-  { id: "audit", label: "Audit history", adminOnly: true },
+  | { kind: "user"; value: User }
+  | { kind: "delete-menu"; value: MenuItem }
+  | { kind: "delete-category"; value: Category };
+const tabs: {
+  id: Tab;
+  label: string;
+  icon: typeof Store;
+  adminOnly?: boolean;
+}[] = [
+  { id: "profile", label: "Store profile", icon: Store },
+  { id: "categories", label: "Categories", icon: Layers },
+  { id: "menu", label: "Menu items", icon: UtensilsCrossed },
+  { id: "customer-menu", label: "Customer menu", icon: QrCode, adminOnly: true },
+  { id: "users", label: "User access", icon: Users, adminOnly: true },
+  { id: "audit", label: "Audit history", icon: History, adminOnly: true },
 ];
+const tabListeners = new Set<() => void>();
+function subscribeTab(listener: () => void) {
+  tabListeners.add(listener);
+  window.addEventListener("popstate", listener);
+  return () => {
+    tabListeners.delete(listener);
+    window.removeEventListener("popstate", listener);
+  };
+}
+function readTabFromLocation(): Tab {
+  if (typeof window === "undefined") return "profile";
+  const param = new URLSearchParams(window.location.search).get("tab");
+  return tabs.some((t) => t.id === param) ? (param as Tab) : "profile";
+}
+function writeTabToLocation(next: Tab) {
+  if (typeof window === "undefined") return;
+  try {
+    const url = new URL(window.location.href);
+    if (next === "profile") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", next);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  } catch {
+    // Ignore history errors in restricted browser contexts.
+  }
+  tabListeners.forEach((listener) => listener());
+}
 export function AdminWorkspace() {
   const { user } = useAuth();
   const admin = user?.role === "ADMIN";
-  const [tab, setTab] = useState<Tab>("profile");
+  const requestedTab = useSyncExternalStore(
+    subscribeTab,
+    readTabFromLocation,
+    () => "profile" as Tab,
+  );
+  const requestedMeta = tabs.find((t) => t.id === requestedTab);
+  const tab: Tab =
+    requestedMeta && (admin || !requestedMeta.adminOnly)
+      ? requestedTab
+      : "profile";
   const settings = useStoreSettings();
   const catalog = useCatalog();
   const controls = useAdmin(admin, admin && tab === "audit");
@@ -91,10 +145,28 @@ export function AdminWorkspace() {
     (catalogTab && (catalog.categories.isError || catalog.menuItems.isError)) ||
     ((tab === "users" || tab === "audit") && controls.users.isError) ||
     (tab === "audit" && controls.audits.isError);
-  async function toggle() {
+  async function confirmAction() {
     if (!confirm || !admin) return;
     setError("");
     try {
+      if (confirm.kind === "delete-menu") {
+        await catalog.deleteMenuItem.mutateAsync(confirm.value.id);
+        setToast({
+          message: `"${confirm.value.name}" deleted.`,
+          variant: "success",
+        });
+        setConfirm(null);
+        return;
+      }
+      if (confirm.kind === "delete-category") {
+        await catalog.deleteCategory.mutateAsync(confirm.value.id);
+        setToast({
+          message: `Category "${confirm.value.name}" deleted.`,
+          variant: "success",
+        });
+        setConfirm(null);
+        return;
+      }
       if (confirm.kind === "category")
         await catalog.updateCategory.mutateAsync({
           id: confirm.value.id,
@@ -113,22 +185,40 @@ export function AdminWorkspace() {
       setToast({ message: "Changes saved.", variant: "success" });
       setConfirm(null);
     } catch (e) {
-      const msg =
+      const raw =
         e instanceof Error && e.message.trim()
           ? e.message
           : "Could not save changes.";
-      setError(msg);
-      setToast({ message: msg, variant: "destructive" });
+      const isDelete =
+        confirm.kind === "delete-menu" || confirm.kind === "delete-category";
+      const hint =
+        confirm.kind === "delete-menu" &&
+        /bill|order|reference|conflict|used/i.test(raw)
+          ? `${raw} Mark it Unavailable instead if it appears on past orders.`
+          : raw;
+      if (isDelete) {
+        setConfirm(null);
+        setToast({ message: hint, variant: "destructive" });
+      } else {
+        setError(hint);
+        setToast({ message: hint, variant: "destructive" });
+      }
     }
   }
+  const tabCount: Partial<Record<Tab, number>> = {
+    categories: categories.length || undefined,
+    menu: items.length || undefined,
+    users: users.length || undefined,
+  };
   if (!user) return null;
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader
+        eyebrow="Administration"
         title="Store administration"
-        description="Manage your store, menu and access."
+        description="Manage your store identity, menu catalog, QR menu and team access."
         badge={
-          <StatusBadge tone={admin ? "info" : "neutral"}>
+          <StatusBadge tone={admin ? "success" : "neutral"}>
             {admin ? "Admin access" : "Read-only view"}
           </StatusBadge>
         }
@@ -141,24 +231,48 @@ export function AdminWorkspace() {
         />
       )}
       <nav
-        className="pos-scroll no-scrollbar flex max-w-full flex-nowrap gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1"
+        className="pos-scroll no-scrollbar flex max-w-full flex-nowrap gap-1.5 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-2xs"
         role="group"
         aria-label="Administration sections"
       >
         {tabs
           .filter((t) => admin || !t.adminOnly)
-          .map((t) => (
-            <Button
-              key={t.id}
-              variant={tab === t.id ? "default" : "ghost"}
-              size="lg"
-              aria-current={tab === t.id ? "page" : undefined}
-              aria-pressed={tab === t.id}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </Button>
-          ))}
+          .map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            const count = tabCount[t.id];
+            return (
+              <Button
+                key={t.id}
+                variant={active ? "default" : "ghost"}
+                size="default"
+                aria-label={t.label}
+                aria-current={active ? "page" : undefined}
+                aria-pressed={active}
+                onClick={() => writeTabToLocation(t.id)}
+                className={
+                  active
+                    ? "min-h-10 shrink-0 gap-2 whitespace-nowrap rounded-xl px-3.5 shadow-xs"
+                    : "min-h-10 shrink-0 gap-2 whitespace-nowrap rounded-xl px-3.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }
+              >
+                <Icon size={16} aria-hidden="true" />
+                <span>{t.label}</span>
+                {count !== undefined && (
+                  <span
+                    aria-hidden="true"
+                    className={
+                      active
+                        ? "rounded-full bg-white/20 px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums text-white"
+                        : "rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums text-muted-foreground"
+                    }
+                  >
+                    {count}
+                  </span>
+                )}
+              </Button>
+            );
+          })}
       </nav>
       {loading ? (
         <QuerySkeleton />
@@ -191,7 +305,7 @@ export function AdminWorkspace() {
               "Could not save store details.",
             )
           }
-          onManage={() => setTab("users")}
+          onManage={() => writeTabToLocation("users")}
           onCategory={() => setCategoryDialog({ item: null })}
           onMenu={() => setMenuDialog({ item: null })}
         />
@@ -203,6 +317,10 @@ export function AdminWorkspace() {
           onAdd={() => setCategoryDialog({ item: null })}
           onEdit={(item) => setCategoryDialog({ item })}
           onImage={setImageCategory}
+          onDelete={(value) => {
+            setError("");
+            setConfirm({ kind: "delete-category", value });
+          }}
           onToggle={(value) => {
             setError("");
             setConfirm({ kind: "category", value });
@@ -216,13 +334,17 @@ export function AdminWorkspace() {
           onAdd={() => setMenuDialog({ item: null })}
           onEdit={(item) => setMenuDialog({ item })}
           onImage={setImageItem}
+          onDelete={(value) => {
+            setError("");
+            setConfirm({ kind: "delete-menu", value });
+          }}
           onToggle={(value) => {
             setError("");
             setConfirm({ kind: "menu", value });
           }}
         />
       ) : tab === "customer-menu" && admin ? (
-        <CustomerMenuTab />
+        <CustomerMenuTab settings={settings.data} />
       ) : tab === "users" && admin ? (
         <UserAccessTab
           users={users}
@@ -392,25 +514,52 @@ export function AdminWorkspace() {
       <ConfirmDialog
         open={!!confirm}
         onOpenChange={(v) => {
-          if (!v) setConfirm(null);
+          if (
+            !v &&
+            !catalog.deleteMenuItem.isPending &&
+            !catalog.deleteCategory.isPending
+          ) {
+            setConfirm(null);
+          }
         }}
-        title="Confirm change"
-        description={
-          confirm?.kind === "category"
-            ? `${confirm.value.is_active ? "Archive" : "Activate"} category ${confirm.value.name}?`
-            : confirm?.kind === "menu"
-              ? `${confirm.value.is_available ? "Make unavailable" : "Make available"}: ${confirm.value.name}?`
-              : confirm?.kind === "user"
-                ? `${confirm.value.is_active ? "Deactivate" : "Activate"} ${confirm.value.full_name}?`
-                : ""
+        title={
+          confirm?.kind === "delete-menu"
+            ? "Delete menu item?"
+            : confirm?.kind === "delete-category"
+              ? "Delete category?"
+              : "Confirm change"
         }
-        confirmLabel="Confirm"
+        description={
+          confirm?.kind === "delete-menu"
+            ? `Permanently delete "${confirm.value.name}"? Its menu image will also be cleaned up. This action cannot be undone.`
+            : confirm?.kind === "delete-category"
+              ? `Permanently delete category "${confirm.value.name}"? Categories with dishes cannot be deleted.`
+              : confirm?.kind === "category"
+                ? `${confirm.value.is_active ? "Archive" : "Activate"} category ${confirm.value.name}?`
+                : confirm?.kind === "menu"
+                  ? `${confirm.value.is_available ? "Make unavailable" : "Make available"}: ${confirm.value.name}?`
+                  : confirm?.kind === "user"
+                    ? `${confirm.value.is_active ? "Deactivate" : "Activate"} ${confirm.value.full_name}?`
+                    : ""
+        }
+        confirmLabel={
+          confirm?.kind === "delete-menu"
+            ? "Delete dish"
+            : confirm?.kind === "delete-category"
+              ? "Delete category"
+              : "Confirm"
+        }
+        destructive={
+          confirm?.kind === "delete-menu" || confirm?.kind === "delete-category"
+        }
         pending={
           catalog.updateCategory.isPending ||
           catalog.updateMenuItem.isPending ||
+          catalog.deleteMenuItem.isPending ||
+          catalog.deleteCategory.isPending ||
           controls.updateUser.isPending
         }
-        onConfirm={() => void toggle()}
+        onConfirm={() => void confirmAction()}
       >
         {error && (
           <Alert variant="destructive" role="alert">

@@ -15,10 +15,18 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
 import { QueryError } from "@/components/shared/QueryState";
-import { useBills, type BillFilters } from "@/hooks/queries";
+import { useAuth } from "@/providers/auth-provider";
+import {
+  useBills,
+  useCancelPaidBill,
+  useDeleteBill,
+  type BillFilters,
+} from "@/hooks/queries";
 import { useBillingSync } from "@/hooks/useBillingSync";
 import { getBusinessDateIST, formatINR } from "@/lib/format";
 import type { BillDetail } from "@/types/domain";
+import { CancelBillDialog } from "./CancelBillDialog";
+import { DeleteBillDialog } from "./DeleteBillDialog";
 
 function initialFilters(): BillFilters {
   const to = getBusinessDateIST(),
@@ -36,14 +44,27 @@ export function PastBillsDrawer({
   open,
   onOpenChange,
   onReceipt,
+  canEdit = true,
+  onBillCancelled,
+  onBillDeleted,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onReceipt: (bill: BillDetail) => void;
+  canEdit?: boolean;
+  onBillCancelled?: (bill: BillDetail) => void;
+  onBillDeleted?: (bill: BillDetail) => void;
 }) {
+  const { user } = useAuth();
   const [filters, setFilters] = useState(initialFilters);
+  const [cancelTarget, setCancelTarget] = useState<BillDetail | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BillDetail | null>(null);
   const bills = useBills(filters, open);
+  const cancelPaidBill = useCancelPaidBill();
+  const deleteBill = useDeleteBill();
   const { queuedBills, retryBill } = useBillingSync();
+  const canCancel = canEdit && user?.role !== "READ_ONLY";
+  const canDelete = canEdit && user?.role === "ADMIN";
 
   const mergedBills = useMemo(() => {
     const serverBills = bills.data ?? [];
@@ -88,6 +109,7 @@ export function PastBillsDrawer({
   }, [bills.data, queuedBills, filters]);
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right">
         <SheetHeader>
@@ -97,7 +119,7 @@ export function PastBillsDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="grid shrink-0 grid-cols-1 gap-2.5 border-b border-border bg-secondary/40 px-5 py-4 text-sm min-[360px]:grid-cols-2 sm:px-6 [&_label]:space-y-1 [&_label]:font-medium">
+        <div className="grid shrink-0 grid-cols-1 gap-2.5 border-b border-border bg-secondary/40 px-5 py-4 text-sm min-[360px]:grid-cols-2 sm:px-6 [&_label]:block [&_label]:space-y-1 [&_label]:font-medium">
           <label className="min-w-0">
             From
             <Input
@@ -224,8 +246,21 @@ export function PastBillsDrawer({
                             {b.syncError}
                           </p>
                         )}
+                        {b.status === "CANCELLED" && b.cancel_reason && (
+                          <p className="mt-1 text-xs text-muted-foreground break-words">
+                            Reason: {b.cancel_reason}
+                          </p>
+                        )}
                         <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <Badge variant="secondary">{b.status}</Badge>
+                          <Badge
+                            variant={
+                              b.status === "CANCELLED"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
+                            {b.status}
+                          </Badge>
                           {b.payment && (
                             <Badge variant="secondary">
                               {b.payment.payment_method}
@@ -260,17 +295,44 @@ export function PastBillsDrawer({
                             </Button>
                           )}
                           {b.status === "PAID" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                onOpenChange(false);
-                                onReceipt(b);
-                              }}
-                            >
-                              Print receipt
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  onOpenChange(false);
+                                  onReceipt(b);
+                                }}
+                              >
+                                Print receipt
+                              </Button>
+                              {canCancel &&
+                                b.id > 0 &&
+                                (!b.syncStatus || b.syncStatus === "SYNCED") && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                    onClick={() => setCancelTarget(b)}
+                                  >
+                                    Cancel bill
+                                  </Button>
+                                )}
+                            </>
                           )}
+                          {canDelete &&
+                            (b.status === "PAID" || b.status === "CANCELLED") &&
+                            b.id > 0 &&
+                            (!b.syncStatus || b.syncStatus === "SYNCED") && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => setDeleteTarget(b)}
+                              >
+                                Delete bill
+                              </Button>
+                            )}
                         </div>
                       </Card>
                     </article>
@@ -282,5 +344,43 @@ export function PastBillsDrawer({
         )}
       </SheetContent>
     </Sheet>
+
+    <CancelBillDialog
+      key={cancelTarget?.id ?? "past-none"}
+      bill={cancelTarget}
+      open={!!cancelTarget}
+      onOpenChange={(v) => {
+        if (!v) setCancelTarget(null);
+      }}
+      title={
+        cancelTarget?.bill_number
+          ? `Cancel bill ${cancelTarget.bill_number}?`
+          : "Cancel paid bill?"
+      }
+      description="This marks the completed bill as cancelled and removes it from sales totals. A reason is required."
+      pending={cancelPaidBill.isPending}
+      onCancel={async (id, reason) => {
+        const cancelled = await cancelPaidBill.mutateAsync({ id, reason });
+        setCancelTarget(null);
+        onBillCancelled?.(cancelled);
+      }}
+    />
+
+    <DeleteBillDialog
+      key={deleteTarget?.id ?? "past-delete-none"}
+      bill={deleteTarget}
+      open={!!deleteTarget}
+      onOpenChange={(v) => {
+        if (!v) setDeleteTarget(null);
+      }}
+      pending={deleteBill.isPending}
+      onDelete={async (id) => {
+        const deleted = deleteTarget!;
+        await deleteBill.mutateAsync(id);
+        setDeleteTarget(null);
+        onBillDeleted?.(deleted);
+      }}
+    />
+  </>
   );
 }

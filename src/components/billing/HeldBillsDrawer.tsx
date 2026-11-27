@@ -9,21 +9,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { FormField } from "@/components/shared/form-field";
 import { Clock3 } from "lucide-react";
 import { QueryError } from "@/components/shared/QueryState";
-import { z } from "zod";
 import type { BillDetail } from "@/types/domain";
 import { formatINR } from "@/lib/format";
-
-const reasonSchema = z
-  .string()
-  .trim()
-  .min(1, "Enter a reason for cancellation.")
-  .max(255);
+import { CancelBillDialog } from "./CancelBillDialog";
 
 export function HeldBillsDrawer({
   open,
@@ -52,32 +44,12 @@ export function HeldBillsDrawer({
 }) {
   const [replace, setReplace] = useState<BillDetail | null>(null);
   const [cancel, setCancel] = useState<BillDetail | null>(null);
-  const [reason, setReason] = useState("");
-  const [message, setMessage] = useState("");
 
   function resume(b: BillDetail) {
     if (hasItems) setReplace(b);
     else {
       onResume(b);
       onOpenChange(false);
-    }
-  }
-
-  async function cancelBill() {
-    const result = reasonSchema.safeParse(reason);
-    if (!result.success) {
-      setMessage(result.error.issues[0].message);
-      return;
-    }
-    try {
-      await onCancel(cancel!.id, result.data);
-      setCancel(null);
-      setReason("");
-      setMessage("");
-    } catch (e) {
-      setMessage(
-        e instanceof Error ? e.message : "Could not cancel this hold.",
-      );
     }
   }
 
@@ -157,11 +129,7 @@ export function HeldBillsDrawer({
                         <div className="grid grid-cols-2 gap-2">
                           <Button
                             variant="outline"
-                            onClick={() => {
-                              setMessage("");
-                              setReason("");
-                              setCancel(b);
-                            }}
+                            onClick={() => setCancel(b)}
                           >
                             Cancel Hold
                           </Button>
@@ -194,7 +162,9 @@ export function HeldBillsDrawer({
         }}
       />
 
-      <ConfirmDialog
+      <CancelBillDialog
+        key={cancel?.id ?? "held-none"}
+        bill={cancel}
         open={!!cancel}
         onOpenChange={(v) => {
           if (!v) setCancel(null);
@@ -202,22 +172,14 @@ export function HeldBillsDrawer({
         title="Cancel held bill?"
         description="This removes the order from the held bills list. A reason is required."
         cancelLabel="Go back"
-        confirmLabel={pending ? "Cancelling..." : "Cancel hold"}
+        confirmLabel="Cancel hold"
+        pendingLabel="Cancelling..."
+        fieldId="cancel-reason"
+        placeholder="Enter a reason"
+        fallbackError="Could not cancel this hold."
         pending={pending}
-        destructive
-        onConfirm={() => void cancelBill()}
-      >
-        <FormField htmlFor="cancel-reason" label="Cancellation reason" error={message}>
-          <Textarea
-            id="cancel-reason"
-            maxLength={255}
-            value={reason}
-            error={Boolean(message)}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Enter a reason"
-          />
-        </FormField>
-      </ConfirmDialog>
+        onCancel={onCancel}
+      />
     </>
   );
 }
